@@ -1,0 +1,36 @@
+buildscript {
+    ext.kotlin_version = '1.2.0'
+
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+}
+
+group 'com.wolle'
+version '1.0-SNAPSHOT'
+
+apply plugin: 'kotlin'
+
+repositories {
+    mavenCentral()
+    mavenLocal()
+}
+
+dependencies {
+    compile 'org.eclipse.jetty:jetty-server:9.4.3.v20170317'
+    compile 'org.eclipse.jetty:jetty-servlet:9.4.3.v20170317'
+    compile 'eu.webtoolkit:jwt:3.3.9'
+    runtime 'eu.webtoolkit:jwt:3.3.9'
+
+    compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+}
+
+compileKotlin {
+    kotlinOptions.jvmTarget = "1.8"
+}
+compileTestKotlin {
+    kotlinOptions.jvmTarget = "1.8"
+}
