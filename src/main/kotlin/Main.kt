@@ -87,6 +87,7 @@ class CPlayer: WContainerWidget() {
         slider.isNativeControl = true // doesn't work if not!
         slider.tickPosition = WSlider.NoTicks
         slider.height = btplay.height
+        slider.valueChanged().addListener(this, { i -> println("slider: $i") })
 
         volume.validator = WIntValidator(0, 500)
         volume.textSize = 3
@@ -182,17 +183,14 @@ class HelloApplication(env: WEnvironment) : WApplication(env) {
     val cfiles = CFiles()
 
     init {
+        println("initialize Application thread=${Thread.currentThread().id}")
         setTitle("WMusicPlayer")
 
         setCssTheme("polished")
+
 //        useStyleSheet(WLink("style/everywidgetx.css"))
 
-//        val theme = WBootstrapTheme()
-//        theme.version = WBootstrapTheme.Version.Version3
-//        // load the default bootstrap3 (sub-)theme
-//        useStyleSheet(WLink(WApplication.getRelativeResourcesUrl() + "themes/bootstrap/3/bootstrap-theme.min.css"))
-
-//        setTheme(WBootstrapTheme())
+//        theme = WBootstrapTheme()
 
         val lmain = WGridLayout(root)
         lmain.addWidget(cplayer, 0, 0, 1, 2)

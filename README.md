@@ -22,12 +22,13 @@ To build it, you need a java jdk >= 1.8 and sbt 0.13.
 
 ## To run it: 
 
-* [Download the jar](https://bitbucket.org/wolfgang/wmusicplayer3/downloads)
+* TODO [Download the jar](https://bitbucket.org/wolfgang/wmusicplayer3/downloads)
 * TODO Double-click to run the jar or run with `java -jar wmusicplayer.jar`
 
 I run this on a computer in a [GNU screen](https://en.wikipedia.org/wiki/GNU_Screen) that is started automatically.
 
 ## Web frontend versions
+
 TODO You can access WMP using 3 different methods:
 
 1. Full WMP using vaadin: http://host:8083/
@@ -35,10 +36,11 @@ TODO You can access WMP using 3 different methods:
 3. Simple WMP control without vaadin/javascript: http://host:8083/mobile
 
 ## Build & package:
+
 TODO `sbt dist`
 
 # Used frameworks #
-TODO
+
 * [JWT](https://www.webtoolkit.eu/jwt)
 * [Kotlin](https://kotlinlang.org)
 * via [com.googlecode.soundlibs](https://code.google.com/p/soundlibs/):

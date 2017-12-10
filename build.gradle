@@ -26,6 +26,7 @@ dependencies {
     runtime 'eu.webtoolkit:jwt:3.3.9'
 
     compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+    compile 'com.google.code.gson:gson:2.8.2' // otherwise, error with slider if opened with mac dashboard
 }
 
 compileKotlin {
