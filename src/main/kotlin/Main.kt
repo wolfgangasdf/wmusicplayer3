@@ -11,6 +11,7 @@ import eu.webtoolkit.jwt.WModelIndex
 import eu.webtoolkit.jwt.WObject
 import eu.webtoolkit.jwt.WAbstractTableModel
 import eu.webtoolkit.jwt.WApplication
+import org.eclipse.jetty.util.resource.Resource
 import java.util.*
 
 
@@ -61,7 +62,7 @@ object BackendSingleton {
     init {
         fixedRateTimer("testt", false, 0, 1000, {
             Thread.sleep(1000)
-            println("timer! app=$app ${Date().time} ${app?.cplayer?.songinfo1}")
+//            println("timer! app=$app ${Date().time} ${app?.cplayer?.songinfo1}")
             val uiLock = app?.updateLock
             app?.cplayer?.songinfo2?.setText(Date().time.toString())
             app?.triggerUpdate()
@@ -160,7 +161,9 @@ class CFiles: WContainerWidget() {
             addit(KWPushButton("pls", "Go to playlist folder", { println("plsfolder") }))
             addit(KWPushButton("✖", "Delete selected playlist file", { println("delpls") }))
             addit(KWPushButton("S", "Settings", { println("settings") }))
-            addit(KWPushButton("?", "Help", { println("help") }))
+            addit(KWPushButton("?", "Help", {
+                println("help")
+            }))
         })
 
         tvfiles.model = VirtualModel(100, 3, tvfiles)
@@ -183,12 +186,12 @@ class HelloApplication(env: WEnvironment) : WApplication(env) {
     val cfiles = CFiles()
 
     init {
-        println("initialize Application thread=${Thread.currentThread().id}")
+        println("initialize Application thread=${Thread.currentThread().id} agent=${env.agent}")
         setTitle("WMusicPlayer")
 
         setCssTheme("polished")
 
-//        useStyleSheet(WLink("style/everywidgetx.css"))
+        useStyleSheet(WLink("style/everywidgetx.css")) // TODO this does not work (returns web app due to /*)
 
 //        theme = WBootstrapTheme()
 
@@ -197,9 +200,15 @@ class HelloApplication(env: WEnvironment) : WApplication(env) {
         lmain.addWidget(cplaylist, 1, 0, 1, 1)
         lmain.addWidget(cfiles, 1, 2, 1, 1)
         lmain.setRowStretch(1, 1)
+        lmain.addWidget(KWPushButton("debug", "...", {
+            println("debug: ${env.hasAjax()}")
+        }), 2, 0)
 
         BackendSingleton.app = this
         enableUpdates()
+
+        println("Application initialized!")
+        println("env: ${env.hasAjax()} ${env.hasJavaScript()} ${env.hasWebGL()}")
     }
 }
 
@@ -214,9 +223,16 @@ class HelloMain : WtServlet() {
     }
 
     init {
+        println("servlet init...")
+        configuration.setProgressiveBootstrap(true) // TODO testing
+        configuration.favicon = "/favicon.ico" // TODO nothing works, hardcoded paths in jwt...
+
         super.init()
+        println("servlet config: pbs:${configuration.progressiveBootstrap("/")} ua:${configuration.uaCompatible}")
+
         // Enable websockets only if the servlet container has support for JSR-356 (Jetty 9, Tomcat 7, ...)
         // configuration.setWebSocketsEnabled(true);
+        println("servlet initialized!")
     }
 }
 
@@ -225,10 +241,9 @@ fun main(args: Array<String>) {
     val server = Server(8080)
 
     val context = ServletContextHandler(ServletContextHandler.SESSIONS)
-
     context.addServlet(HelloMain::class.java, "/*") // star is essential for css etc!
     context.addEventListener(ServletInit())
-//    context.baseResource = Resource.newResource("WebRoot")
+    context.baseResource = Resource.newResource("/WebRoot") // TODO does this work? no
 
     server.handler = context
 
