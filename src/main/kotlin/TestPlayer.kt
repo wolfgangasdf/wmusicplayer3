@@ -1,5 +1,3 @@
-import mu.KLogger
-import mu.KLogging
 import mu.KotlinLogging
 import java.io.File
 import java.io.IOException
@@ -83,7 +81,7 @@ object TestBackend {
 
     fun main(args: Array<String>) {
         MusicPlayerBackend.onFinished = { println("onFinished1") }
-        MusicPlayerBackend.play("file:///Unencrypted_Data/Music/111.wav", -1.0)
+        print("play res = " + MusicPlayerBackend.play("file:///Unencrypted_Data/Music/111.wav", -1.0))
 
         Thread.sleep(500)
         MusicPlayerBackend.stop() // should stop, and NOT call onFinished
@@ -91,9 +89,9 @@ object TestBackend {
 
         println("test play other song")
         MusicPlayerBackend.onFinished = { println("onFinished2") }
-        MusicPlayerBackend.play("file:///Unencrypted_Data/Music/111.wav", -1.0)
+        print("play res = " + MusicPlayerBackend.play("file:///Unencrypted_Data/Music/111.wav", -1.0))
         Thread.sleep(500)
-        MusicPlayerBackend.play("file:///Unencrypted_Data/Music/222.wav", -1.0)
+        print("play res = " + MusicPlayerBackend.play("file:///Unencrypted_Data/Music/222.wav", -1.0))
         waitForPlayer()
 
         println("test gapless")
@@ -103,10 +101,10 @@ object TestBackend {
             println("onFinished3")
             if (songi <= songs.size - 2) {
                 songi += 1
-                MusicPlayerBackend.play("file:///Unencrypted_Data/Music/" + songs[songi], -1.0)
+                print("play res = " + MusicPlayerBackend.play("file:///Unencrypted_Data/Music/" + songs[songi], -1.0))
             }
         }
-        MusicPlayerBackend.play("file:///Unencrypted_Data/Music/" + songs[songi], -1.0)
+        print("play res = " + MusicPlayerBackend.play("file:///Unencrypted_Data/Music/" + songs[songi], -1.0))
         waitForPlayer()
 
         println("test skipping")
@@ -141,9 +139,10 @@ object TestBackend {
 @Suppress("unused")
 object TestStream {
     fun main(args: Array<String>) {
-        val url = "http://ice.somafm.com/groovesalad"
-//    var url = "http://173.236.41.18:80/relay"
-        MusicPlayerBackend.play(url, -1.0)
+//        val url = "http://ice.somafm.com/groovesalad"
+//        val url = "http://ice1.somafm.com/deepspaceone-128-mp3"
+    val url = "http://listen.radionomy.com/ABC-Lounge" // from shoutcast.com
+        print("play res = " + MusicPlayerBackend.play(url, -1.0))
         while (MusicPlayerBackend.dogetPlaying()) {
             println("playing...")
             Thread.sleep(1000)

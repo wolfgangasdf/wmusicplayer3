@@ -1,10 +1,5 @@
 
 
-import javazoom.spi.mpeg.sampled.file.IcyListener
-import javazoom.spi.mpeg.sampled.file.tag.IcyInputStream
-import javazoom.spi.mpeg.sampled.file.tag.IcyTag
-import javazoom.spi.mpeg.sampled.file.tag.TagParseEvent
-import javazoom.spi.mpeg.sampled.file.tag.TagParseListener
 import java.io.*
 import java.net.URL
 import java.util.concurrent.atomic.AtomicBoolean
@@ -145,7 +140,7 @@ object MusicPlayerBackend {
         private var fut: CompletableFuture<Unit>? = null
         private var volume: FloatControl? = null
         var isStream = false
-        private var icyInputStream: IcyInputStream? = null
+//        private var icyInputStream: IcyInputStream? = null
 
         fun setVolume(vol: Double) {
             if (volume != null) {
@@ -173,6 +168,35 @@ object MusicPlayerBackend {
             if (sdl != null) { if (sdl!!.isOpen) { sdl!!.stop() ; sdl!!.close() } }
         }
 
+        class IcyBufferedInputStream(inps: InputStream, private val metainterval: Int) : BufferedInputStream(inps) {
+            var readBytesUntilMeta = 0
+
+            override fun read(): Int = 0 // not needed
+            override fun read(b: ByteArray?) = 0 // not needed
+
+            // read icy-metaint chunks according to http://www.smackfu.com/stuff/programming/shoutcast.html etc
+            override fun read(b: ByteArray?, off: Int, len: Int): Int {
+                assert(off != 0) // not implemented, don't need
+                return if (metainterval > 0 && readBytesUntilMeta +len > metainterval) {
+                    val len2 = metainterval- readBytesUntilMeta // read until next metadata or len
+                    val tmpread = super.read(b, off, len2)
+                    val metaN = super.read() // metadata length = metaN*16 bytes
+                    if (metaN > 0) {
+                        val metabb = ByteArray(metaN*16)
+                        super.read(metabb, 0, metaN*16)
+                        // TODO propagate to onMetadatachanged
+                        logger.debug("metadata: " + metabb.toString(Charsets.UTF_8))
+                    }
+                    readBytesUntilMeta = 0
+                    tmpread
+                } else {
+                    val tmpread = super.read(b, off, len)
+                    readBytesUntilMeta += tmpread
+                    tmpread
+                }
+            }
+        }
+
         fun play2(songurl: String, timelen: Double): (/*currentfile*/String) {
 //            setContextClassLoader()
             action.set(Actions.ANOTHING.i)
@@ -190,18 +214,22 @@ object MusicPlayerBackend {
             var audioFile: File? = null
             try {
                 if (url.protocol == "http") { // shoutcast streams seem to need this
-                    val conn = url.openConnection()
 
+//                    TODO this doesn't work, somafn glitches (icy metadata)
+//                    audioIn = AudioSystem.getAudioInputStream(url)
 
-//                    // TODO this doesn't work. something's broken.
+                    // TODO this also doesn't work!
+//                    val conn = url.openConnection()
 //                    conn.setRequestProperty("Icy-Metadata", "1") // this distorts sound!
+//                    conn.setRequestProperty("Connection", "close")
 //                    val bInputStream = BufferedInputStream(conn.getInputStream())
 //                    val tmpb = ByteArray(4)
 //                    icyInputStream = null
-//                    // TODO icecast / shoutcast titles don't come in properly
 //                    // http://fox-gieg.com/patches/processing/libraries/minim/src/ddf/minim/javasound/MpegAudioFileReader.java
+//                    bInputStream.mark(4)
 //                    if (bInputStream.read(tmpb, 0, 4) > 2) {
 //                      val tmpbs = String(tmpb)
+//                        bInputStream.reset()
 //                      logger.debug("stream first 4 bytes = " + tmpbs)
 //                      if (tmpbs.toUpperCase().startsWith("ICY")) { // shoutcast
 //                        logger.debug("ice: is shoutcast stream")
@@ -212,11 +240,12 @@ object MusicPlayerBackend {
 //                      val metaint = conn.getHeaderField("icy-metaint")
 //                      if (metaint != null) { // icecast 2 ?
 //                          logger.debug("ice: is icecast 2 stream metaint=" + metaint)
-//                        icyInputStream = IcyInputStream(bInputStream, metaint)
+//                          icyInputStream = IcyInputStream(bInputStream, metaint)
 //                      }
 //                    }
 //                    if (icyInputStream != null) {
 //                      audioIn = AudioSystem.getAudioInputStream(icyInputStream)
+//                        icyInputStream!!.mark(1000)
 //                      icyInputStream!!.addTagParseListener(IcyListener.getInstance())
 //                      icyInputStream!!.addTagParseListener{ tpe: TagParseEvent ->
 //                          when (tpe.tag) {
@@ -229,9 +258,29 @@ object MusicPlayerBackend {
 //                      audioIn = AudioSystem.getAudioInputStream(bInputStream)
 //                    }
 
-                    val bInputStream = BufferedInputStream(conn.getInputStream())
+                    // my own attempt, WORKS for icecast & shoutcast!!!
+                    val conn = url.openConnection()
+                    conn.setRequestProperty("Accept", "*/*")
+                    conn.setRequestProperty("Icy-Metadata", "1") // this distorts sound!
+                    conn.setRequestProperty("Connection", "close")
+                    logger.debug("contentlength: ${conn.contentLength}")
+                    val metaint = conn.getHeaderFieldInt("icy-metaint", -1)
+                    logger.debug("ice: is icecast 2 stream metaint=" + metaint)
+                    // get stream name
+                    val headers = conn.headerFields.mapValues { e -> e.value.first() }
+                    headers.forEach { t, u -> logger.debug("HHH $t: $u") }
+                    val streamname = headers.getOrDefault("icy-name", url.toString())
+                    currentFile = streamname
+                    val bInputStream = IcyBufferedInputStream(conn.getInputStream(), metaint)
                     audioIn = AudioSystem.getAudioInputStream(bInputStream)
-                    currentFile = url.toString()
+                    // here i must reset the read counter so that after icy-metaint bytes the metadata comes!!!!!!!!!!!!!!!!!!!!!!!!!!
+                    bInputStream.readBytesUntilMeta = 0
+
+// works
+//                    val conn = url.openConnection()
+//                    val bInputStream = BufferedInputStream(conn.getInputStream())
+//                    audioIn = AudioSystem.getAudioInputStream(bInputStream)
+
                     isStream = true
                 } else if (url.protocol == "file") {
                     isStream = false
@@ -287,8 +336,8 @@ object MusicPlayerBackend {
             fut = CompletableFuture.supplyAsync {
                 // http://docs.oracle.com/javase/tutorial/sound/playing.html
                 var total = 0
-                logger.debug("samplerate=" + decodedFormat!!.sampleRate + " framesize=" + decodedFormat!!.frameSize)
                 val bufferSize = (decodedFormat!!.sampleRate * decodedFormat!!.frameSize).toInt()
+                logger.debug("samplerate=" + decodedFormat!!.sampleRate + " framesize=" + decodedFormat!!.frameSize + " buffsize=$bufferSize")
                 val buffer = ByteArray(bufferSize)
                 var bytesRead = 0
                 fun skipBuffer(toSkip: Int): Int {
@@ -410,6 +459,7 @@ object MusicPlayerBackend {
     var onPlayingStateChanged: (/*stopped*/Boolean, /*paused*/Boolean) -> Unit = { _, _ -> }
     var onProgress: (/*secs*/ Double, /*secstotal*/ Double) -> Unit = { _, _ -> }
     var onSongMetaChanged: (/*metadataTODO*/ String) -> Unit =  {}
+
 
 //    var loader: ClassLoader = _ // see above
 //    def setContextClassLoader(): Unit = Thread.currentThread().setContextClassLoader(loader)
