@@ -1,9 +1,13 @@
+import mu.KLogger
+import mu.KLogging
+import mu.KotlinLogging
 import java.io.File
 import java.io.IOException
 import javax.sound.sampled.AudioFormat
 import javax.sound.sampled.AudioSystem
 import javax.sound.sampled.DataLine
 import javax.sound.sampled.SourceDataLine
+
 
 @Suppress("unused")
 object TestFlac {
@@ -149,7 +153,20 @@ object TestStream {
 
 
 fun main(args: Array<String>) {
-//    TestStream.main(args)
-    TestBackend.main(args)
+    System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "DEBUG")
+
+    val logger = KotlinLogging.logger {} // WTF, can't define Logger outside because then no debug.
+
+    fun testot() {
+        println("debug: " + logger.isDebugEnabled)
+        logger.info("iiiinfo")
+        logger.debug("ddddebug")
+    }
+
+    testot()
+    TestStream.main(args)
+//    TestBackend.main(args)
 //    TestFlac.main(args)
 }
+
+

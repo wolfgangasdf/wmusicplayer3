@@ -1,5 +1,10 @@
 
 
+import javazoom.spi.mpeg.sampled.file.IcyListener
+import javazoom.spi.mpeg.sampled.file.tag.IcyInputStream
+import javazoom.spi.mpeg.sampled.file.tag.IcyTag
+import javazoom.spi.mpeg.sampled.file.tag.TagParseEvent
+import javazoom.spi.mpeg.sampled.file.tag.TagParseListener
 import java.io.*
 import java.net.URL
 import java.util.concurrent.atomic.AtomicBoolean
@@ -140,6 +145,7 @@ object MusicPlayerBackend {
         private var fut: CompletableFuture<Unit>? = null
         private var volume: FloatControl? = null
         var isStream = false
+        private var icyInputStream: IcyInputStream? = null
 
         fun setVolume(vol: Double) {
             if (volume != null) {
@@ -185,45 +191,45 @@ object MusicPlayerBackend {
             try {
                 if (url.protocol == "http") { // shoutcast streams seem to need this
                     val conn = url.openConnection()
+
+
+//                    // TODO this doesn't work. something's broken.
+//                    conn.setRequestProperty("Icy-Metadata", "1") // this distorts sound!
+//                    val bInputStream = BufferedInputStream(conn.getInputStream())
+//                    val tmpb = ByteArray(4)
+//                    icyInputStream = null
+//                    // TODO icecast / shoutcast titles don't come in properly
+//                    // http://fox-gieg.com/patches/processing/libraries/minim/src/ddf/minim/javasound/MpegAudioFileReader.java
+//                    if (bInputStream.read(tmpb, 0, 4) > 2) {
+//                      val tmpbs = String(tmpb)
+//                      logger.debug("stream first 4 bytes = " + tmpbs)
+//                      if (tmpbs.toUpperCase().startsWith("ICY")) { // shoutcast
+//                        logger.debug("ice: is shoutcast stream")
+//                        icyInputStream = IcyInputStream(bInputStream)
+//                      }
+//                    }
+//                    if (icyInputStream == null) {
+//                      val metaint = conn.getHeaderField("icy-metaint")
+//                      if (metaint != null) { // icecast 2 ?
+//                          logger.debug("ice: is icecast 2 stream metaint=" + metaint)
+//                        icyInputStream = IcyInputStream(bInputStream, metaint)
+//                      }
+//                    }
+//                    if (icyInputStream != null) {
+//                      audioIn = AudioSystem.getAudioInputStream(icyInputStream)
+//                      icyInputStream!!.addTagParseListener(IcyListener.getInstance())
+//                      icyInputStream!!.addTagParseListener{ tpe: TagParseEvent ->
+//                          when (tpe.tag) {
+//                            is IcyTag -> logger.debug("icytag: ${(tpe.tag as IcyTag).valueAsString}")
+//                            else -> logger.debug("unknown tag: " + tpe.tag)
+//                          }
+//                      }
+//
+//                    } else {
+//                      audioIn = AudioSystem.getAudioInputStream(bInputStream)
+//                    }
+
                     val bInputStream = BufferedInputStream(conn.getInputStream())
-                    /*
-                    conn.setRequestProperty("Icy-Metadata", "1") // this distorts sound!
-                    val bInputStream = new BufferedInputStream(conn.getInputStream)
-                    val tmpb = Array.ofDim[Byte](4)
-                    icyInputStream = null
-                    // TODO icecast / shoutcast titles don't come in properly
-                    // http://fox-gieg.com/patches/processing/libraries/minim/src/ddf/minim/javasound/MpegAudioFileReader.java
-                    if (bInputStream.read(tmpb, 0, 4) > 2) {
-                      val tmpbs = new String(tmpb)
-                      debug("stream first 4 bytes = " + tmpbs)
-                      if (tmpbs.toUpperCase.startsWith("ICY")) { // shoutcast
-                        debug("ice: is shoutcast stream")
-                        icyInputStream = new IcyInputStream(bInputStream)
-                      }
-                    }
-                    if (icyInputStream == null) {
-                      val metaint = conn.getHeaderField("icy-metaint")
-                      if (metaint != null) { // icecast 2 ?
-                        debug("ice: is icecast 2 stream")
-                        icyInputStream = new IcyInputStream(bInputStream, metaint)
-                      }
-                    }
-                    if (icyInputStream != null) {
-                      audioIn = AudioSystem.getAudioInputStream(icyInputStream)
-                      icyInputStream.addTagParseListener(IcyListener.getInstance())
-                      icyInputStream.addTagParseListener(new TagParseListener {
-                        override def tagParsed(tpe: TagParseEvent) = {
-                          tpe.getTag match {
-                            case it: IcyTag =>
-                              // debug(s"icytag: ${it.getValueAsString}")
-                            case aa: Any => debug("unknown tag: " + aa)
-                          }
-                        }
-                      })
-                    } else {
-                      audioIn = AudioSystem.getAudioInputStream(bInputStream)
-                    }
-                    */
                     audioIn = AudioSystem.getAudioInputStream(bInputStream)
                     currentFile = url.toString()
                     isStream = true

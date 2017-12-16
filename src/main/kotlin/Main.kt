@@ -11,9 +11,11 @@ import eu.webtoolkit.jwt.WModelIndex
 import eu.webtoolkit.jwt.WObject
 import eu.webtoolkit.jwt.WAbstractTableModel
 import eu.webtoolkit.jwt.WApplication
+import mu.KotlinLogging
 import org.eclipse.jetty.util.resource.Resource
 import java.util.*
 
+private val logger = KotlinLogging.logger {}
 
 internal class VirtualModel(private val rows_: Int, private val columns_: Int, parent: WObject) : WAbstractTableModel(parent) {
 
@@ -237,6 +239,8 @@ class HelloMain : WtServlet() {
 }
 
 fun main(args: Array<String>) {
+
+    System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "TRACE")
 
     val server = Server(8080)
 

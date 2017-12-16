@@ -30,8 +30,8 @@ dependencies {
     compile 'org.eclipse.jetty:jetty-servlet:9.4.3.v20170317'
     compile 'eu.webtoolkit:jwt:3.3.9'
     runtime 'eu.webtoolkit:jwt:3.3.9'
-//    testCompile group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.25'
-    compile 'io.github.microutils:kotlin-logging:1.4.7'
+    compile group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.25'
+    compile 'io.github.microutils:kotlin-logging:1.4.8'
 
 
     compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
