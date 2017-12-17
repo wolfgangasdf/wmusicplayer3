@@ -22,27 +22,32 @@ kotlin {
 
 repositories {
     mavenCentral()
-    mavenLocal()
+    mavenLocal() // for jwt
+    jcenter() // for kotlinx.html
 }
 
 dependencies {
+    compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+
+    compile 'io.github.microutils:kotlin-logging:1.4.8'
+    compile group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.25'
+
     compile 'org.eclipse.jetty:jetty-server:9.4.3.v20170317'
     compile 'org.eclipse.jetty:jetty-servlet:9.4.3.v20170317'
+
+    // jwt
     compile 'eu.webtoolkit:jwt:3.3.9'
     runtime 'eu.webtoolkit:jwt:3.3.9'
-    compile group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.25'
-    compile 'io.github.microutils:kotlin-logging:1.4.8'
-
-
-    compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
     compile 'com.google.code.gson:gson:2.8.2' // otherwise, error with slider if opened with mac dashboard
-
     // other things in the WEB-INF/lib folder from gallery example (except javagl stuff):
 //    compile group: 'org.jogamp.gluegen', name: 'gluegen-rt-main', version: '2.0.2'
 //    testCompile group: 'org.hamcrest', name: 'hamcrest-all', version: '1.1'
     //provided group: 'javax.websocket', name: 'javax.websocket-api', version: '1.1'
 
+    // kotlinx.html
+    compile "org.jetbrains.kotlinx:kotlinx-html-jvm:0.6.8"
 
+    // sound
     compile "com.googlecode.soundlibs:mp3spi:1.9.5.4"
     compile "com.googlecode.soundlibs:vorbisspi:1.0.3.3"
     compile "com.googlecode.soundlibs:jlayer:1.0.1.4"

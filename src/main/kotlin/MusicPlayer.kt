@@ -134,19 +134,19 @@ object MusicPlayer {
                 } else {
                     when {
                         s.matches(numberTag) -> {
-                            nume = numberTag.matchEntire(s)!!.groupValues[0].toInt()
+                            nume = numberTag.matchEntire(s)!!.groupValues[1].toInt()
                         }
                         s.matches(fileTag) -> {
                             val ss = fileTag.matchEntire(s)!!.groupValues
-                            files.put(ss[0].toInt(), ss[1])
+                            files.put(ss[1].toInt(), ss[2])
                         }
                         s.matches(titleTag) -> {
                             val ss = titleTag.matchEntire(s)!!.groupValues
-                            titles.put(ss[0].toInt(), ss[1])
+                            titles.put(ss[1].toInt(), ss[2])
                         }
                         s.matches(lengthTag) -> {
                             val ss = lengthTag.matchEntire(s)!!.groupValues
-                            lengths.put(ss[0].toInt(), ss[1])
+                            lengths.put(ss[1].toInt(), ss[2])
                         }
                         else -> logger.warn("not found: <" + s + ">")
                     }

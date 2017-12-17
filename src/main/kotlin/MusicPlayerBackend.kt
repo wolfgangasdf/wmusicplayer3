@@ -261,7 +261,7 @@ object MusicPlayerBackend {
                     // my own attempt, WORKS for icecast & shoutcast!!!
                     val conn = url.openConnection()
                     conn.setRequestProperty("Accept", "*/*")
-                    conn.setRequestProperty("Icy-Metadata", "1") // this distorts sound!
+                    conn.setRequestProperty("Icy-Metadata", "1") // request it
                     conn.setRequestProperty("Connection", "close")
                     logger.debug("contentlength: ${conn.contentLength}")
                     val metaint = conn.getHeaderFieldInt("icy-metaint", -1)
@@ -295,7 +295,6 @@ object MusicPlayerBackend {
                         emitPlayingStateChanged()
                         return ""
                     }
-
                 }
 
                 decodedFormat = dogetDecodedFormat(audioIn!!)
