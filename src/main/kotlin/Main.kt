@@ -34,6 +34,7 @@ fun main(args: Array<String>) {
     context.addServlet(shMobileRes, "/mobileres/*")
 
     val shJwt = ServletHolder("jwt", JwtServlet::class.java)
+    shJwt.isAsyncSupported = true
     // shJwt.setInitParameter("tracking-mode", "URL") // doesn't work.
     context.addEventListener(ServletInit()) // TODO put in separate context because of this?
     context.addServlet(shJwt, "/*")
