@@ -13,7 +13,7 @@ class KotlinxHtmlServlet : HttpServlet() {
     override fun doGet(request: HttpServletRequest?, response: HttpServletResponse?) {
 
         val playlab = if (MusicPlayer.dogetPlaying()) "pause" else "play"
-        val volume = MusicPlayer.pVolume.toString(2) //formatted("%02d")
+        val volume = "%02d".format(MusicPlayer.pVolume)
         val currentsong = MusicPlayer.pCurrentSong
         val currentfile = MusicPlayer.pCurrentFile
         fun getplscap(ii: Int): String {
@@ -102,29 +102,31 @@ class KotlinxHtmlServlet : HttpServlet() {
     }
 
     override fun doPost(req: HttpServletRequest?, resp: HttpServletResponse?) {
-        println("post " + req!!.getParameter("action"))
-        val p = req.getParameter("action")
-        if (p != null) {
-            val plpatt = "([0-9]): (.*)".toRegex()
-            operator fun Regex.contains(text: CharSequence): Boolean = this.matches(text)
-            when(p) {
-                "play","pause" -> MusicPlayer.dotoggle()
-                "vol+" -> MusicPlayer.incDecVolume(up = true)
-                "vol-" -> MusicPlayer.incDecVolume(up = false)
-                "prev" -> MusicPlayer.playPrevious()
-                "next" -> MusicPlayer.playNext()
-                "refresh" -> {  }
-                else -> {
-                    if (plpatt.matches(p)) {
-                        val i = plpatt.matchEntire(p)!!.groupValues[1].toInt()
-                        MusicPlayer.loadPlaylist(Settings.bQuickPls[i])
-                        MusicPlayer.playFirst()
-                    } else {
-                        logger.warn("unknown action " + p)
+        if (req != null) {
+            val p = req.getParameter("action")
+            if (p != null) {
+                val plpatt = "([0-9]): (.*)".toRegex()
+                operator fun Regex.contains(text: CharSequence): Boolean = this.matches(text)
+                when(p) {
+                    "play","pause" -> MusicPlayer.dotoggle()
+                    "vol+" -> MusicPlayer.incDecVolume(up = true)
+                    "vol-" -> MusicPlayer.incDecVolume(up = false)
+                    "prev" -> MusicPlayer.playPrevious()
+                    "next" -> MusicPlayer.playNext()
+                    "refresh" -> {  }
+                    else -> {
+                        if (plpatt.matches(p)) {
+                            val i = plpatt.matchEntire(p)!!.groupValues[1].toInt()
+                            MusicPlayer.loadPlaylist(Settings.bQuickPls[i])
+                            MusicPlayer.playFirst()
+                        } else {
+                            logger.warn("unknown action " + p)
+                        }
                     }
                 }
             }
+            resp!!.sendRedirect("/mobile") // reload
         }
-        doGet( req, resp)
     }
+
 }
