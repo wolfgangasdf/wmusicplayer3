@@ -1,3 +1,5 @@
+import azadev.kotlin.css.*
+import azadev.kotlin.css.dimens.*
 import kotlinx.html.*
 import kotlinx.html.stream.appendHTML
 import mu.KotlinLogging
@@ -10,6 +12,7 @@ import javax.servlet.http.HttpServletResponse
 private val logger = KotlinLogging.logger {}
 
 class KotlinxHtmlServlet : HttpServlet() {
+
     override fun doGet(request: HttpServletRequest?, response: HttpServletResponse?) {
 
         val playlab = if (MusicPlayer.dogetPlaying()) "pause" else "play"
@@ -26,6 +29,38 @@ class KotlinxHtmlServlet : HttpServlet() {
             }
         }
 
+
+
+
+
+        val css = Stylesheet {
+            body {
+                backgroundColor = "#B0B0B0"
+                color = "#000"
+                fontFamily = "Arial"
+                lineHeight = 120.percent
+                fontSize = 18.px
+            }
+            ".button" {
+                boxShadow = "rgba(0,0,0,0.2) 0 1px 0 0"
+                color = "#333"
+                backgroundColor = "#FA2"
+                borderRadius = 7.px
+                border = NONE
+                fontFamily = "Arial,sans-serif"
+                fontSize = 20.px
+                fontWeight = 700
+                height = 55.px
+                padding = "2px 8px"
+                textShadow = "#FE6 0 1px 0"
+            }
+
+            ".b2" {
+                backgroundColor = "#DAA520"
+            }
+        }
+        logger.debug("CSS = " + css.render())
+
         response!!.contentType = "text/html"
 
         response.writer.appendHTML(true).html {
@@ -33,35 +68,7 @@ class KotlinxHtmlServlet : HttpServlet() {
                 title = "WMP Mobile"
                 style {
                     unsafe {
-                        raw("""
-                            |body {
-                            |    background-color:#B0B0B0;
-                            |    color: #000;
-                            |    font-family: Arial;
-                            |    line-height: 120%;
-                            |    font-size:18px;
-                            |}
-                            |.button {
-                            |    -webkit-box-shadow:rgba(0,0,0,0.2) 0 1px 0 0;
-                            |    -moz-box-shadow:rgba(0,0,0,0.2) 0 1px 0 0;
-                            |    box-shadow:rgba(0,0,0,0.2) 0 1px 0 0;
-                            |    color:#333;
-                            |    background-color:#FA2;
-                            |    border-radius:7px;
-                            |    -moz-border-radius:7px;
-                            |    -webkit-border-radius:7px;
-                            |    border:none;
-                            |    font-family:Arial,sans-serif;
-                            |    font-size:20px;
-                            |    font-weight:700;
-                            |    height:55px;
-                            |    padding:2px 8px;
-                            |    text-shadow:#FE6 0 1px 0
-                            |}
-                            |
-                            |.b2 {
-                            |    background-color:#DAA520;
-                            |}""".trimMargin())
+                        raw(css.render())
                     }
                 }
                 meta("viewport", "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0")
@@ -87,7 +94,7 @@ class KotlinxHtmlServlet : HttpServlet() {
                     }
                     +currentsong
                     br
-                    div { style = "font-size:2"
+                    div { style = "font-size:small"
                         +currentfile
                     }
                     br

@@ -23,7 +23,7 @@ kotlin {
 repositories {
     mavenCentral()
     mavenLocal() // for jwt
-    jcenter() // for kotlinx.html
+    jcenter() // for kotlinx.html, aza-css
 }
 
 dependencies {
@@ -46,6 +46,9 @@ dependencies {
 
     // kotlinx.html
     compile "org.jetbrains.kotlinx:kotlinx-html-jvm:0.6.8"
+
+    // css dsl
+    compile 'azadev.kotlin:aza-kotlin-css:1.0'
 
     // sound
     compile "com.googlecode.soundlibs:mp3spi:1.9.5.4"
