@@ -212,7 +212,7 @@ class CPlaylist: WContainerWidget() {
     }
 }
 
-// TODO scroll bug: add thin column 0
+// TODO can't scroll first column bug: add thin column before!
 class CFiles: WContainerWidget() {
     private val lfiles = WVBoxLayout(this)
     private var mfiles: ModelFiles? = null
