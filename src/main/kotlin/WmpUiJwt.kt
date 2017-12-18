@@ -43,32 +43,23 @@ class SettingsWindow : WDialog("Settings") {
     }
 }
 
-internal class VirtualModel(private val rows_: Int, private val columns_: Int, parent: WObject) : WAbstractTableModel(parent) {
+// TODO need iscurr?
+internal class ModelPlaylist(parent: WObject) : WAbstractTableModel(parent) {
+
+    val lplaylist = mutableListOf(PlaylistItem("asdf", "titleaaa", false, 180), PlaylistItem("bbb", "titleabbb", false, 3600))
 
     override fun getRowCount(parent: WModelIndex?): Int {
-        return if (parent == null) {
-            this.rows_
-        } else {
-            0
-        }
+        return if (parent == null) { lplaylist.size } else 0
     }
 
+    //bug: can't scroll first column bug: add thin column before!
     override fun getColumnCount(parent: WModelIndex?): Int {
-        return if (parent == null) {
-            this.columns_
-        } else {
-            0
-        }
+        return if (parent == null) 2 else 0
     }
 
     override fun getData(index: WModelIndex, role: Int): Any? {
         return when (role) {
-            ItemDataRole.DisplayRole -> if (index.column == 0) {
-                WString("Row {1}").arg(index.row)
-            } else {
-                WString("Item row {1}, col {2}").arg(
-                        index.row).arg(index.column)
-            }
+            ItemDataRole.DisplayRole -> WString(if (index.column == 1) lplaylist[index.row].title else "")
             else -> null
         }
     }
@@ -76,7 +67,7 @@ internal class VirtualModel(private val rows_: Int, private val columns_: Int, p
     override fun getHeaderData(section: Int, orientation: Orientation, role: Int): Any? {
         return if (orientation === Orientation.Horizontal) {
             when (role) {
-                ItemDataRole.DisplayRole -> WString("Column {1}").arg(section)
+                ItemDataRole.DisplayRole -> if (section == 1) "Title" else ""
                 else -> null
             }
         } else {
@@ -84,7 +75,12 @@ internal class VirtualModel(private val rows_: Int, private val columns_: Int, p
         }
     }
 
+    fun triggerDataChanged() {
+        modelReset().trigger()
+    }
+
 }
+
 
 internal class ModelFiles(parent: WObject) : WAbstractTableModel(parent) {
 
@@ -94,13 +90,14 @@ internal class ModelFiles(parent: WObject) : WAbstractTableModel(parent) {
         return if (parent == null) { lfiles.size } else 0
     }
 
+    //bug: can't scroll first column bug: add thin column before!
     override fun getColumnCount(parent: WModelIndex?): Int {
-        return if (parent == null) 1 else 0
+        return if (parent == null) 2 else 0
     }
 
     override fun getData(index: WModelIndex, role: Int): Any? {
         return when (role) {
-            ItemDataRole.DisplayRole -> WString(if (index.column == 0) lfiles[index.row].name else "xxx")
+            ItemDataRole.DisplayRole -> WString(if (index.column == 1) lfiles[index.row].name else "")
             else -> null
         }
     }
@@ -108,7 +105,7 @@ internal class ModelFiles(parent: WObject) : WAbstractTableModel(parent) {
     override fun getHeaderData(section: Int, orientation: Orientation, role: Int): Any? {
         return if (orientation === Orientation.Horizontal) {
             when (role) {
-                ItemDataRole.DisplayRole -> if (section == 1) WString("Filename") else "xxx"
+                ItemDataRole.DisplayRole -> if (section == 1) "Filename" else "xxx"
                 else -> null
             }
         } else {
@@ -189,8 +186,27 @@ class CPlayer: WContainerWidget() {
 
 class CPlaylist: WContainerWidget() {
     private val lplaylist = WVBoxLayout(this)
+    private var mplaylist: ModelPlaylist? = null
     private val plname = WLineEdit("<pl name>")
-    private val tvplaylist = WTableView()
+
+    private val tvplaylist = kJwtGeneric({ WTableView() }) {
+        mplaylist = ModelPlaylist(this)
+        model = mplaylist
+        rowHeaderCount = 1
+        isSortingEnabled = false
+        setAlternatingRowColors(true)
+        rowHeight = WLength(28.0)
+
+        setColumnWidth(0, WLength(0.0))
+        setColumnWidth(1, WLength(300.0))
+        headerHeight = WLength(28.0)
+        selectionMode = SelectionMode.ExtendedSelection
+        selectionBehavior = SelectionBehavior.SelectRows
+        editTriggers = EnumSet.of<WAbstractItemView.EditTrigger>(WAbstractItemView.EditTrigger.NoEditTrigger)
+//        resize(WLength(650.0), WLength(400.0))
+        doubleClicked().addListener(this, { mi, me -> println(" dclick: " + if (mi != null) mplaylist!!.lplaylist[mi.row] else "none") })
+    }
+
     init {
         lplaylist.addWidget(kJwtHBox(this){
             addit(plname, 1)
@@ -199,20 +215,10 @@ class CPlaylist: WContainerWidget() {
             addit(KWPushButton("✖", "Remove selected songs from playlist", { println("remove from playlist") }))
         })
 
-        tvplaylist.model = VirtualModel(100, 3, tvplaylist)
-        tvplaylist.rowHeaderCount = 1
-        tvplaylist.isSortingEnabled = false
-        tvplaylist.setAlternatingRowColors(true)
-        tvplaylist.rowHeight = WLength(28.0)
-        tvplaylist.headerHeight = WLength(28.0)
-        tvplaylist.selectionMode = SelectionMode.ExtendedSelection
-        tvplaylist.editTriggers = EnumSet.of<WAbstractItemView.EditTrigger>(WAbstractItemView.EditTrigger.NoEditTrigger)
-        tvplaylist.resize(WLength(650.0), WLength(400.0))
         lplaylist.addWidget(tvplaylist, 1)
     }
 }
 
-// TODO can't scroll first column bug: add thin column before!
 class CFiles: WContainerWidget() {
     private val lfiles = WVBoxLayout(this)
     private var mfiles: ModelFiles? = null
@@ -226,12 +232,13 @@ class CFiles: WContainerWidget() {
         setAlternatingRowColors(true)
         rowHeight = WLength(28.0)
 
-        setColumnWidth(0, WLength(500.0))
+        setColumnWidth(0, WLength(0.0))
+        setColumnWidth(1, WLength(300.0))
         headerHeight = WLength(28.0)
         selectionMode = SelectionMode.ExtendedSelection
         selectionBehavior = SelectionBehavior.SelectRows
         editTriggers = EnumSet.of<WAbstractItemView.EditTrigger>(WAbstractItemView.EditTrigger.NoEditTrigger)
-        resize(WLength(650.0), WLength(400.0))
+//        resize(WLength(650.0), WLength(400.0))
         doubleClicked().addListener(this, { mi, me -> println(" dclick: " + if (mi != null) mfiles!!.lfiles[mi.row] else "none") })
         clicked().addListener(this, { mi, me ->
             if (mi != null) {
