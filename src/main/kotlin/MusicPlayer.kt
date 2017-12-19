@@ -1,5 +1,6 @@
 
 import Constants.soundFile
+import javafx.collections.FXCollections
 import mu.KotlinLogging
 import java.io.BufferedReader
 import java.io.File
@@ -50,7 +51,7 @@ object MusicPlayer {
     var pIsStopped = true
     var pIsPaused = false
 
-    val cPlaylist = mutableListOf<PlaylistItem>()
+    val cPlaylist = FXCollections.observableArrayList<PlaylistItem>()
 
     var playlistFile: File? = null
     var pPlaylistName = ""

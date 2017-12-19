@@ -11,6 +11,10 @@ import eu.webtoolkit.jwt.WLength
 import eu.webtoolkit.jwt.WSelectionBox
 import eu.webtoolkit.jwt.WContainerWidget
 import java.io.File
+import eu.webtoolkit.jwt.StandardButton
+import eu.webtoolkit.jwt.WMessageBox
+import javafx.beans.Observable
+import javafx.collections.FXCollections
 
 
 private val logger = KotlinLogging.logger {}
@@ -44,9 +48,9 @@ class SettingsWindow : WDialog("Settings") {
 }
 
 // TODO need iscurr?
-internal class ModelPlaylist(parent: WObject) : WAbstractTableModel(parent) {
+class ModelPlaylist(parent: WObject) : WAbstractTableModel(parent) {
 
-    val lplaylist = mutableListOf(PlaylistItem("asdf", "titleaaa", false, 180), PlaylistItem("bbb", "titleabbb", false, 3600))
+    val lplaylist = MusicPlayer.cPlaylist!!//mutableListOf(PlaylistItem("asdf", "titleaaa", false, 180), PlaylistItem("bbb", "titleabbb", false, 3600))
 
     override fun getRowCount(parent: WModelIndex?): Int {
         return if (parent == null) { lplaylist.size } else 0
@@ -75,16 +79,18 @@ internal class ModelPlaylist(parent: WObject) : WAbstractTableModel(parent) {
         }
     }
 
-    fun triggerDataChanged() {
-        modelReset().trigger()
+    init {
+        lplaylist.addListener { obs: Observable ->
+            modelReset().trigger()
+        }
     }
 
 }
 
 
-internal class ModelFiles(parent: WObject) : WAbstractTableModel(parent) {
+class ModelFiles(parent: WObject) : WAbstractTableModel(parent) {
 
-    val lfiles = mutableListOf<File>(File("asdf"), File("bbbb"))
+    val lfiles = FXCollections.observableArrayList<File>()!!
 
     override fun getRowCount(parent: WModelIndex?): Int {
         return if (parent == null) { lfiles.size } else 0
@@ -113,8 +119,10 @@ internal class ModelFiles(parent: WObject) : WAbstractTableModel(parent) {
         }
     }
 
-    fun triggerDataChanged() {
-        modelReset().trigger()
+    init {
+        lfiles.addListener { obs: Observable ->
+            modelReset().trigger()
+        }
     }
 
 }
@@ -136,7 +144,7 @@ object BackendSingleton {
     var app: JwtApplication? = null
 }
 
-class CPlayer: WContainerWidget() {
+class CPlayer(app: JwtApplication) : WContainerWidget() {
     private val lplayer = WVBoxLayout(this)
     private val btplay = KWPushButton("►", "Toggle play/pause", { println("playpause") })
     private val slider = WSlider()
@@ -184,9 +192,9 @@ class CPlayer: WContainerWidget() {
     }
 }
 
-class CPlaylist: WContainerWidget() {
+class CPlaylist(app: JwtApplication) : WContainerWidget() {
     private val lplaylist = WVBoxLayout(this)
-    private var mplaylist: ModelPlaylist? = null
+    var mplaylist: ModelPlaylist? = null
     private val plname = WLineEdit("<pl name>")
 
     private val tvplaylist = kJwtGeneric({ WTableView() }) {
@@ -203,23 +211,34 @@ class CPlaylist: WContainerWidget() {
         selectionMode = SelectionMode.ExtendedSelection
         selectionBehavior = SelectionBehavior.SelectRows
         editTriggers = EnumSet.of<WAbstractItemView.EditTrigger>(WAbstractItemView.EditTrigger.NoEditTrigger)
-//        resize(WLength(650.0), WLength(400.0))
+        resize(WLength(2000.0), WLength(2000.0))
         doubleClicked().addListener(this, { mi, me -> println(" dclick: " + if (mi != null) mplaylist!!.lplaylist[mi.row] else "none") })
     }
 
     init {
         lplaylist.addWidget(kJwtHBox(this){
             addit(plname, 1)
-            addit(KWPushButton("save", "Save current playlist to current name", { println("save pls") }))
-            addit(KWPushButton("✖✖", "Clear playlist", { println("clear pls") }))
-            addit(KWPushButton("✖", "Remove selected songs from playlist", { println("remove from playlist") }))
+            addit(KWPushButton("save", "Save current playlist to current name", {
+                if (Settings.playlistFolder == "") {
+                    WMessageBox.show("Info", "<p>You need to assign a playlist folder first!</p>", EnumSet.of(StandardButton.Ok))
+                } else {
+                    MusicPlayer.savePlaylist()
+                    println("saved playlist") // make floating thing.
+                }
+            }))
+            addit(KWPushButton("✖✖", "Clear playlist", {
+                MusicPlayer.cPlaylist.clear()
+            }))
+            addit(KWPushButton("✖", "Remove selected songs from playlist", {
+                tvplaylist.selectedIndexes.map { mi -> mi.row }.reversed().forEach { i ->  mplaylist!!.lplaylist.removeAt(i) }
+            }))
         })
 
         lplaylist.addWidget(tvplaylist, 1)
     }
 }
 
-class CFiles: WContainerWidget() {
+class CFiles(val app: JwtApplication) : WContainerWidget() {
     private val lfiles = WVBoxLayout(this)
     private var mfiles: ModelFiles? = null
     private val currentfolder = WText("currentfolder")
@@ -238,7 +257,7 @@ class CFiles: WContainerWidget() {
         selectionMode = SelectionMode.ExtendedSelection
         selectionBehavior = SelectionBehavior.SelectRows
         editTriggers = EnumSet.of<WAbstractItemView.EditTrigger>(WAbstractItemView.EditTrigger.NoEditTrigger)
-//        resize(WLength(650.0), WLength(400.0))
+        resize(WLength(2000.0), WLength(2000.0))
         doubleClicked().addListener(this, { mi, me -> println(" dclick: " + if (mi != null) mfiles!!.lfiles[mi.row] else "none") })
         clicked().addListener(this, { mi, me ->
             if (mi != null) {
@@ -255,8 +274,6 @@ class CFiles: WContainerWidget() {
             var cc = fdir.listFiles( { file -> Constants.soundFilePls.matches(file.name) || (file.isDirectory && !file.name.startsWith(".")) })
             cc = cc.sortedByDescending { a -> a.name.toLowerCase() }.toTypedArray()
             mfiles!!.lfiles.addAll(cc)
-            mfiles!!.triggerDataChanged()
-            println("refreshed" + mfiles!!.lfiles.joinToString(","))
             if (selectFile != null) {
                 val sidx = cc.indexOfFirst { c -> c.path == selectFile.path }
                 if (sidx > -1) {
@@ -268,7 +285,7 @@ class CFiles: WContainerWidget() {
         }
     }
 
-    fun changeDir(newPath: String, selectFile: File? = null, dontStore: Boolean = false) {
+    private fun changeDir(newPath: String, selectFile: File? = null, dontStore: Boolean = false) {
         logger.debug("chdir to " + newPath)
         if (!dontStore) Settings.recentDirs.push(Settings.pCurrentFolder)
         Settings.pCurrentFolder = newPath
@@ -277,10 +294,18 @@ class CFiles: WContainerWidget() {
         loadDir(selectFile)
     }
 
+    private fun addFileToPlaylist(f: File) {
+        if (!f.isDirectory) {
+            MusicPlayer.addToPlaylist("file://" + f.path)
+        }
+    }
+
     init {
         lfiles.addWidget(currentfolder)
         lfiles.addWidget(kJwtHBox(this){
-            addit(KWPushButton("+", "Add current file to playlist", { println("add+") }))
+            addit(KWPushButton("+", "Add current file to playlist", {
+                tvfiles.selectedIndexes.forEach { mi -> addFileToPlaylist(mfiles!!.lfiles[mi.row])}
+            }))
             addit(KWPushButton("++", "Add all files in current folder to playlist", { println("add++") }))
             addit(KWPushButton("+++", "Add all files in current folder recursively to playlist", { println("add+++") }))
             addit(KWPushButton("⇧", "Go to parent folder", {
@@ -304,9 +329,9 @@ class CFiles: WContainerWidget() {
 }
 
 class JwtApplication(env: WEnvironment) : WApplication(env) {
-    val cplayer = CPlayer()
-    private val cplaylist = CPlaylist()
-    private val cfiles = CFiles()
+    val cplayer = CPlayer(this)
+    val cplaylist = CPlaylist(this)
+    val cfiles = CFiles(this)
 
     init {
         logger.info("initialize Application thread=${Thread.currentThread().id} agent=${env.agent}")
@@ -324,9 +349,10 @@ class JwtApplication(env: WEnvironment) : WApplication(env) {
         lmain.addWidget(cplaylist, 1, 0, 1, 1)
         lmain.addWidget(cfiles, 1, 2, 1, 1)
         lmain.setRowStretch(1, 1)
-        lmain.addWidget(KWPushButton("debug", "...", {
-            logger.debug("debug: ${env.hasAjax()}")
-        }), 2, 0)
+        lmain.addWidget(kJwtHBox(root) {
+            addit(KWPushButton("debug", "...", { logger.debug("debug: ${env.hasAjax()}") }), 0)
+            addit(WText("info"))
+        }, 2, 0, 1, 2)
 
         BackendSingleton.app = this
         enableUpdates()
