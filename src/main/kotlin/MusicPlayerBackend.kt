@@ -65,9 +65,9 @@ object MusicPlayerBackend {
                 mda.forEach { mdai ->
                     when(mdai) {
                         is org.jflac.metadata.VorbisComment -> {
-                            au = mdai.getCommentByName("ARTIST")[0]
-                            al = mdai.getCommentByName("ALBUM")[0]
-                            ti = mdai.getCommentByName("TITLE")[0]
+                            au = mdai.getCommentByName("ARTIST")?.getOrElse(0, { "" }) ?: ""
+                            al = mdai.getCommentByName("ALBUM")?.getOrElse(0, { "" }) ?: ""
+                            ti = mdai.getCommentByName("TITLE")?.getOrElse(0, { "" }) ?: ""
                         }
                         is org.jflac.metadata.StreamInfo -> {
                             if (mdai.sampleRate > 0) le = (mdai.totalSamples / mdai.sampleRate).toInt()

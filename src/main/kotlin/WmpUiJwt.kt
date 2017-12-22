@@ -80,7 +80,10 @@ class ModelPlaylist(parent: WObject) : WAbstractTableModel(parent) {
     }
 
     init {
+        logger.debug("initialize ModelPlaylist...: " + WApplication.getInstance().sessionId + " threadid: " + Thread.currentThread().id)
         lplaylist.addListener { obs: Observable ->
+//        MusicPlayer.cPlaylist.addListener { obs: Observable ->
+            logger.debug("playlist listener: " + WApplication.getInstance().sessionId + " threadid: " + Thread.currentThread().id)
             modelReset().trigger()
         }
     }
@@ -332,6 +335,10 @@ class JwtApplication(env: WEnvironment) : WApplication(env) {
     val cplayer = CPlayer(this)
     val cplaylist = CPlaylist(this)
     val cfiles = CFiles(this)
+    override fun quit() {
+        logger.debug("quit application thread=${Thread.currentThread().id} agent=${environment.agent}")
+        super.quit()
+    }
 
     init {
         logger.info("initialize Application thread=${Thread.currentThread().id} agent=${env.agent}")
@@ -350,7 +357,10 @@ class JwtApplication(env: WEnvironment) : WApplication(env) {
         lmain.addWidget(cfiles, 1, 2, 1, 1)
         lmain.setRowStretch(1, 1)
         lmain.addWidget(kJwtHBox(root) {
-            addit(KWPushButton("debug", "...", { logger.debug("debug: ${env.hasAjax()}") }), 0)
+            addit(KWPushButton("debug", "...", {
+                logger.debug("debug: ${env.hasAjax()}")
+                //logger.debug("debug playlist=" + MusicPlayer.cPlaylist.joinToString { pli -> pli.name })
+            }), 0)
             addit(WText("info"))
         }, 2, 0, 1, 2)
 
@@ -374,7 +384,7 @@ class JwtServlet : WtServlet() {
 
     init {
         logger.info("servlet init...")
-        configuration.setProgressiveBootstrap(true) // TODO testing
+//        configuration.setProgressiveBootstrap(true) // TODO testing
         configuration.favicon = "/favicon.ico" // TODO nothing works, hardcoded paths in jwt...
 
         super.init()
