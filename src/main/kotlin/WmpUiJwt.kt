@@ -45,6 +45,7 @@ class SettingsWindow : WDialog("Settings") {
             addit(WLabel("Audio mixers:"))
             addit(sbmixer)
         })
+        lplayer.addWidget(KWPushButton("Reset playlist folder", "set again afterwards!", { Settings.playlistFolder = "" }))
     }
 }
 
@@ -262,7 +263,12 @@ class CFiles(val app: JwtApplication) : WContainerWidget() {
         selectionBehavior = SelectionBehavior.SelectRows
         editTriggers = EnumSet.of<WAbstractItemView.EditTrigger>(WAbstractItemView.EditTrigger.NoEditTrigger)
         resize(WLength(2000.0), WLength(2000.0))
-        doubleClicked().addListener(this, { mi, me -> println(" dclick: " + if (mi != null) mfiles!!.lfiles[mi.row] else "none") })
+        doubleClicked().addListener(this, { mi, me ->
+            if (mi != null) {
+                val f = mfiles!!.lfiles[mi.row]
+                if (f.isDirectory) addFileToPlaylist(f)
+            }
+        })
         clicked().addListener(this, { mi, me ->
             if (mi != null) {
                 val f = mfiles!!.lfiles[mi.row]
@@ -290,7 +296,7 @@ class CFiles(val app: JwtApplication) : WContainerWidget() {
     }
 
     private fun changeDir(newPath: String, selectFile: File? = null, dontStore: Boolean = false) {
-        logger.debug("chdir to " + newPath)
+        logger.debug("chdir to $newPath ds=$dontStore")
         if (!dontStore) Settings.recentDirs.push(Settings.pCurrentFolder)
         Settings.pCurrentFolder = newPath
         currentfolder.setText(Settings.pCurrentFolder)
@@ -310,15 +316,39 @@ class CFiles(val app: JwtApplication) : WContainerWidget() {
             addit(KWPushButton("+", "Add current file to playlist", {
                 tvfiles.selectedIndexes.forEach { mi -> addFileToPlaylist(mfiles!!.lfiles[mi.row])}
             }))
-            addit(KWPushButton("++", "Add all files in current folder to playlist", { println("add++") }))
-            addit(KWPushButton("+++", "Add all files in current folder recursively to playlist", { println("add+++") }))
+            addit(KWPushButton("++", "Add all files in current folder to playlist", {
+                mfiles!!.lfiles.forEach { f -> addFileToPlaylist(f) }
+            }))
+            addit(KWPushButton("+++", "Add all files in current folder recursively to playlist", {
+                File(currentfolder.text.toString()).walkTopDown().forEach { f -> addFileToPlaylist(f) }
+            }))
             addit(KWPushButton("⇧", "Go to parent folder", {
                 val newcf = File(Settings.pCurrentFolder).parent
                 if (newcf != null) changeDir(newcf, File(Settings.pCurrentFolder))
             }))
-            addit(KWPushButton("⇦", "Go to previous folder", { println("prevfolder") }))
-            addit(KWPushButton("pls", "Go to playlist folder", { println("plsfolder") }))
-            addit(KWPushButton("✖", "Delete selected playlist file", { println("delpls") }))
+            addit(KWPushButton("⇦", "Go to previous folder", {
+                logger.debug("recent dirs ne=${Settings.recentDirs.isNotEmpty()} :" + Settings.recentDirs.joinToString { s -> s })
+                if (Settings.recentDirs.isNotEmpty()) changeDir(Settings.recentDirs.pop(), dontStore = true)
+            }))
+            addit(KWPushButton("pls", "Go to playlist folder (or set if empty)", {
+                if (Settings.playlistFolder == "") {
+                    if (WMessageBox.show("Warning", "<p>Set playlist folder to current folder?</p>", EnumSet.of(StandardButton.Ok, StandardButton.Cancel))
+                            == StandardButton.Ok) {
+                        Settings.playlistFolder = currentfolder.text.toString()
+                        Settings.save()
+                    }
+                } else changeDir(Settings.playlistFolder)
+            }))
+            addit(KWPushButton("✖", "Delete selected playlist file", {
+                tvfiles.selectedIndexes.forEach { mi ->
+                    val f = mfiles!!.lfiles[mi.row]
+                    if (f.name.endsWith(".pls")) {
+                        f.delete()
+                        logger.info("deleted ${f.path}")
+                    }
+                    loadDir()
+                }
+            }))
             addit(KWPushButton("S", "Settings", {
                 SettingsWindow().show()
             }))
