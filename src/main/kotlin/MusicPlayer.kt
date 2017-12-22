@@ -1,5 +1,9 @@
+@file:Suppress("unused")
 
 import Constants.soundFile
+import javafx.beans.property.SimpleDoubleProperty
+import javafx.beans.property.SimpleIntegerProperty
+import javafx.beans.property.SimpleStringProperty
 import javafx.collections.FXCollections
 import mu.KotlinLogging
 import java.io.BufferedReader
@@ -22,10 +26,8 @@ object Constants {
     val tagStream = "http://"
 
     val soundFile = """(file.*\.(flac|mp3|wav|ogg))|(http.*)""".toRegex()
-    val soundFilePls = """([^\.].*\.(flac|mp3|wav|ogg|pls))""".toRegex()
+    val soundFilePls = """([^.].*\.(flac|mp3|wav|ogg|pls))""".toRegex()
 }
-
-
 
 class PlaylistItem(var name: String, var title: String, var isCurrent: Boolean, var length: Int)
 
@@ -42,11 +44,11 @@ object MusicPlayer {
 //        Thread.currentThread().setContextClassLoader(loader)
 //    }
 
-    var pCurrentFile = "currfile"
-    var pCurrentSong = "currsong"
-    var pTimePos = 0.0
-    var pTimeLen = 0.0
-    var pVolume = 50
+    var pCurrentFile = SimpleStringProperty("currfile")
+    var pCurrentSong = SimpleStringProperty("currsong")
+    var pTimePos = SimpleDoubleProperty(0.0)
+    var pTimeLen = SimpleDoubleProperty(0.0)
+    var pVolume = SimpleIntegerProperty(50)
     var pLastFolder = "/"
     var pIsStopped = true
     var pIsPaused = false
@@ -192,15 +194,15 @@ object MusicPlayer {
     }
 
     fun updateVolume() { // 0..100
-        MusicPlayerBackend.setVolume(pVolume/100.0)
+        MusicPlayerBackend.setVolume(pVolume.value/100.0)
         Settings.save()
     }
 
     fun incDecVolume(up: Boolean) {
-        var newvol = pVolume + (if (up) +1 else -1) * 5
+        var newvol = pVolume.value + (if (up) +1 else -1) * 5
         if (newvol > 100) newvol = 100
         if (newvol < 0) newvol = 0
-        pVolume = newvol
+        pVolume.value = newvol
         updateVolume()
     }
 
@@ -209,7 +211,7 @@ object MusicPlayer {
         if (cPlaylist.contains(currentPlaylistItem)) currentPlaylistItem!!.isCurrent = false
         currentPlaylistItem = it
         currentPlaylistItem!!.isCurrent = true
-        pCurrentSong = currentPlaylistItem!!.title
+        pCurrentSong.value = currentPlaylistItem!!.title
     }
 
     fun getMixers() = MusicPlayerBackend.dogetMixers()
@@ -253,8 +255,8 @@ object MusicPlayer {
         }
 
         MusicPlayerBackend.onProgress = { time, len ->
-            pTimePos = time
-            pTimeLen = len
+            pTimePos.value = time
+            pTimeLen.value = len
         }
 
         MusicPlayerBackend.onSongMetaChanged = {
@@ -279,7 +281,7 @@ object MusicPlayer {
         }
         val currfile = MusicPlayerBackend.play(currentPlaylistItem!!.name, currentPlaylistItem!!.length.toDouble())
         updateVolume()
-        pCurrentFile = currfile
+        pCurrentFile.value = currfile
     }
 
     init {

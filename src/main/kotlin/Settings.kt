@@ -31,7 +31,7 @@ object Settings {
             firstRun = true
         }
         props.load(FileInputStream(ff))
-        MusicPlayer.pVolume = props.getProperty("volume","50").toInt()
+        MusicPlayer.pVolume.value = props.getProperty("volume","50").toInt()
         playlistDefault = props.getProperty("playlistdefault","")
         playlistFolder = props.getProperty("playlistfolder","")
         pCurrentFolder = props.getProperty("currentfolder","/")
@@ -46,7 +46,7 @@ object Settings {
         try {
             val ff = getSettingsFile()
             logger.debug("save config: settings file = " + ff.getPath())
-            props.put("volume",MusicPlayer.pVolume.toString())
+            props.put("volume",MusicPlayer.pVolume.value.toString())
             props.put("playlistdefault", playlistDefault)
             props.put("playlistfolder", playlistFolder)
             props.put("currentfolder", pCurrentFolder)

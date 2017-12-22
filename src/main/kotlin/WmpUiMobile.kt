@@ -92,10 +92,10 @@ class KotlinxHtmlServlet : HttpServlet() {
                         +" "
                         input(name="action", type=InputType.submit, classes = "button" ) { value="refresh" }
                     }
-                    +currentsong
+                    +currentsong.value
                     br
                     div { style = "font-size:small"
-                        +currentfile
+                        +currentfile.value
                     }
                     br
                     for (i in 0 until Constants.NQUICKPLS) {

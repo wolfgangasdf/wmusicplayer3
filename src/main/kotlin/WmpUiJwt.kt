@@ -151,14 +151,18 @@ object BackendSingleton {
 
 class CPlayer(app: JwtApplication) : WContainerWidget() {
     private val lplayer = WVBoxLayout(this)
-    private val btplay = KWPushButton("►", "Toggle play/pause", { println("playpause") })
+    private val btplay = KWPushButton("►", "Toggle play/pause", { MusicPlayer.dotoggle() })
     private val slider = WSlider()
-    private val volume = WLineEdit("0")
+    private val volume = WText("0")
     private val timecurr = WText("1:00")
     private val timelen = WText("1:05:23")
     private val songinfo1 = WText("<b>songi1</b>")
     val songinfo2 = WText("songi2")
     private val quickbtns = Array(6, { i -> KWPushButton("pls $i", "load Playlist $i", { println("qloadpls $i") })})
+    fun getMinutes(secs: Int): String {
+        val min = Math.floor(1.0/60*secs).toInt()
+        return "%01d:%02d".format(min, secs-60*min)
+    }
 
     init {
         slider.isNativeControl = true // doesn't work if not!
@@ -166,19 +170,16 @@ class CPlayer(app: JwtApplication) : WContainerWidget() {
         slider.height = btplay.height
         slider.valueChanged().addListener(this, { i -> println("slider: $i") })
 
-        volume.validator = WIntValidator(0, 500)
-        volume.textSize = 3
-
         lplayer.addWidget(kJwtHBox(this){
-            addit(KWPushButton("⇠", "Previous song", { println("prev song") }))
+            addit(KWPushButton("⇠", "Previous song", { MusicPlayer.playPrevious() }))
             addit(btplay)
-            addit(KWPushButton("⇥", "Next song", { println("next song") }))
-            addit(KWPushButton("⇠", "Skip -10s", { println("skip -10s") }))
+            addit(KWPushButton("⇥", "Next song", { MusicPlayer.playNext() }))
+            addit(KWPushButton("⇠", "Skip -10s", { MusicPlayer.skipRel(-10.0) }))
             addit(slider)
-            addit(KWPushButton("⇢", "Skip +10s", { println("skip +10s") }))
-            addit(KWPushButton("V-", "Volume down", { println("vol down") }))
+            addit(KWPushButton("⇢", "Skip +10s", { MusicPlayer.skipRel(+10.0) }))
+            addit(KWPushButton("V-", "Volume down", { MusicPlayer.incDecVolume(false) }))
             addit(volume)
-            addit(KWPushButton("V+", "Volume up", { println("vol up") }))
+            addit(KWPushButton("V+", "Volume up", { MusicPlayer.incDecVolume(true) }))
         })
 
         lplayer.addWidget(kJwtHBox(this){
@@ -193,6 +194,13 @@ class CPlayer(app: JwtApplication) : WContainerWidget() {
         })
 
         // TODO: playlist quick buttons
+
+        // TODO rename stuff to make coherent
+        MusicPlayer.pCurrentFile.addListener { obs, oldv, newv -> doUI(app) {songinfo2.setText(newv) } }
+        MusicPlayer.pCurrentSong.addListener { obs, oldv, newv -> doUI(app) {songinfo1.setText("<b>$newv</b>") } }
+        MusicPlayer.pTimePos.addListener { obs, oldv, newv -> doUI(app) {timecurr.setText(getMinutes(newv.toInt())) } }
+        MusicPlayer.pTimeLen.addListener { obs, oldv, newv -> doUI(app) {timelen.setText(getMinutes(newv.toInt())) } }
+        MusicPlayer.pVolume.addListener { obs, oldv, newv -> doUI(app) { volume.setText(getMinutes(newv.toInt())) } }
 
     }
 }
