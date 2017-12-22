@@ -15,6 +15,7 @@ import eu.webtoolkit.jwt.StandardButton
 import eu.webtoolkit.jwt.WMessageBox
 import javafx.beans.Observable
 import javafx.collections.FXCollections
+import javafx.collections.ListChangeListener
 
 
 private val logger = KotlinLogging.logger {}
@@ -48,9 +49,9 @@ class SettingsWindow : WDialog("Settings") {
 }
 
 // TODO need iscurr?
-class ModelPlaylist(parent: WObject) : WAbstractTableModel(parent) {
+class ModelPlaylist(app: WApplication, parent: WObject) : WAbstractTableModel(parent) {
 
-    val lplaylist = MusicPlayer.cPlaylist!!//mutableListOf(PlaylistItem("asdf", "titleaaa", false, 180), PlaylistItem("bbb", "titleabbb", false, 3600))
+    val lplaylist = MusicPlayer.cPlaylist
 
     override fun getRowCount(parent: WModelIndex?): Int {
         return if (parent == null) { lplaylist.size } else 0
@@ -81,11 +82,11 @@ class ModelPlaylist(parent: WObject) : WAbstractTableModel(parent) {
 
     init {
         logger.debug("initialize ModelPlaylist...: " + WApplication.getInstance().sessionId + " threadid: " + Thread.currentThread().id)
-        lplaylist.addListener { obs: Observable ->
-//        MusicPlayer.cPlaylist.addListener { obs: Observable ->
-            logger.debug("playlist listener: " + WApplication.getInstance().sessionId + " threadid: " + Thread.currentThread().id)
+        lplaylist.addListener(ListChangeListener { obs ->
+            val uiLock = app.updateLock
             modelReset().trigger()
-        }
+            uiLock?.release()
+        })
     }
 
 }
@@ -201,7 +202,7 @@ class CPlaylist(app: JwtApplication) : WContainerWidget() {
     private val plname = WLineEdit("<pl name>")
 
     private val tvplaylist = kJwtGeneric({ WTableView() }) {
-        mplaylist = ModelPlaylist(this)
+        mplaylist = ModelPlaylist(app,this)
         model = mplaylist
         rowHeaderCount = 1
         isSortingEnabled = false
@@ -335,13 +336,15 @@ class JwtApplication(env: WEnvironment) : WApplication(env) {
     val cplayer = CPlayer(this)
     val cplaylist = CPlaylist(this)
     val cfiles = CFiles(this)
+    val tInfo = WText("info")
+
     override fun quit() {
         logger.debug("quit application thread=${Thread.currentThread().id} agent=${environment.agent}")
         super.quit()
     }
 
     init {
-        logger.info("initialize Application thread=${Thread.currentThread().id} agent=${env.agent}")
+        logger.info("initialize Application sid=${WApplication.getInstance().sessionId} thread=${Thread.currentThread().id} agent=${env.agent}")
 
         setTitle("WMusicPlayer")
 
@@ -361,7 +364,7 @@ class JwtApplication(env: WEnvironment) : WApplication(env) {
                 logger.debug("debug: ${env.hasAjax()}")
                 //logger.debug("debug playlist=" + MusicPlayer.cPlaylist.joinToString { pli -> pli.name })
             }), 0)
-            addit(WText("info"))
+            addit(tInfo, 1)
         }, 2, 0, 1, 2)
 
         BackendSingleton.app = this

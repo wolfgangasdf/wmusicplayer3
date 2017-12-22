@@ -51,7 +51,8 @@ object MusicPlayer {
     var pIsStopped = true
     var pIsPaused = false
 
-    val cPlaylist = FXCollections.observableArrayList<PlaylistItem>()
+    private val cIntPlaylist = FXCollections.observableArrayList<PlaylistItem>()
+    val cPlaylist = FXCollections.synchronizedObservableList(cIntPlaylist)!!
 
     var playlistFile: File? = null
     var pPlaylistName = ""
