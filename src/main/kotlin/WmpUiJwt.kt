@@ -199,9 +199,12 @@ class CPlayer(app: JwtApplication) : WContainerWidget() {
         MusicPlayer.pCurrentFile.addListener { obs, oldv, newv -> doUI(app) {songinfo2.setText(newv) } }
         MusicPlayer.pCurrentSong.addListener { obs, oldv, newv -> doUI(app) {songinfo1.setText("<b>$newv</b>") } }
         MusicPlayer.pTimePos.addListener { obs, oldv, newv -> doUI(app) {timecurr.setText(getMinutes(newv.toInt())) } }
-        MusicPlayer.pTimeLen.addListener { obs, oldv, newv -> doUI(app) {timelen.setText(getMinutes(newv.toInt())) } }
+        MusicPlayer.pTimeLen.addListener { obs, oldv, newv -> doUI(app) {
+            timelen.setText(getMinutes(newv.toInt()))
+            if (slider.maximum != MusicPlayer.pTimeLen.intValue()) slider.maximum = MusicPlayer.pTimeLen.intValue()
+        } }
         MusicPlayer.pVolume.addListener { obs, oldv, newv -> doUI(app) { volume.setText(getMinutes(newv.toInt())) } }
-
+        MusicPlayer.pIsPlaying.addListener { obs, oldv, newv -> doUI(app) { btplay.setText(if (newv) "❙❙" else "►") } }
     }
 }
 
@@ -235,7 +238,7 @@ class CPlaylist(app: JwtApplication) : WContainerWidget() {
                 if (Settings.playlistFolder == "") {
                     WMessageBox.show("Info", "<p>You need to assign a playlist folder first!</p>", EnumSet.of(StandardButton.Ok))
                 } else {
-                    MusicPlayer.savePlaylist()
+                    MusicPlayer.savePlaylist(plname.text)
                     println("saved playlist") // make floating thing.
                 }
             }))
@@ -248,6 +251,8 @@ class CPlaylist(app: JwtApplication) : WContainerWidget() {
         })
 
         lplaylist.addWidget(tvplaylist, 1)
+
+        MusicPlayer.pPlaylistName.addListener { obs, oldv, newv -> doUI(app) { plname.text = newv } }
     }
 }
 
@@ -274,7 +279,7 @@ class CFiles(val app: JwtApplication) : WContainerWidget() {
         doubleClicked().addListener(this, { mi, me ->
             if (mi != null) {
                 val f = mfiles!!.lfiles[mi.row]
-                if (f.isDirectory) addFileToPlaylist(f)
+                if (!f.isDirectory) addFileToPlaylist(f)
             }
         })
         clicked().addListener(this, { mi, me ->
@@ -290,7 +295,7 @@ class CFiles(val app: JwtApplication) : WContainerWidget() {
         if (fdir.exists()) {
             currentfolder.setText(Settings.pCurrentFolder)
             var cc = fdir.listFiles( { file -> Constants.soundFilePls.matches(file.name) || (file.isDirectory && !file.name.startsWith(".")) })
-            cc = cc.sortedByDescending { a -> a.name.toLowerCase() }.toTypedArray()
+            cc = cc.sortedBy { a -> a.name.toLowerCase() }.toTypedArray()
             mfiles!!.lfiles.addAll(cc)
             if (selectFile != null) {
                 val sidx = cc.indexOfFirst { c -> c.path == selectFile.path }

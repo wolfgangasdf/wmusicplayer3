@@ -1,9 +1,7 @@
 @file:Suppress("unused")
 
 import Constants.soundFile
-import javafx.beans.property.SimpleDoubleProperty
-import javafx.beans.property.SimpleIntegerProperty
-import javafx.beans.property.SimpleStringProperty
+import javafx.beans.property.*
 import javafx.collections.FXCollections
 import mu.KotlinLogging
 import java.io.BufferedReader
@@ -44,21 +42,21 @@ object MusicPlayer {
 //        Thread.currentThread().setContextClassLoader(loader)
 //    }
 
-    var pCurrentFile = SimpleStringProperty("currfile")
-    var pCurrentSong = SimpleStringProperty("currsong")
-    var pTimePos = SimpleDoubleProperty(0.0)
-    var pTimeLen = SimpleDoubleProperty(0.0)
-    var pVolume = SimpleIntegerProperty(50)
+    // observable public
+    val pCurrentFile = SimpleStringProperty("currfile")
+    val pCurrentSong = SimpleStringProperty("currsong")
+    val pTimePos = SimpleDoubleProperty(0.0)
+    val pTimeLen = SimpleDoubleProperty(0.0)
+    val pVolume = SimpleIntegerProperty(50)
+    val pIsPlaying = SimpleBooleanProperty(false)
     var pLastFolder = "/"
-    var pIsStopped = true
-    var pIsPaused = false
 
     private val cIntPlaylist = FXCollections.observableArrayList<PlaylistItem>()
     val cPlaylist = FXCollections.synchronizedObservableList(cIntPlaylist)!!
 
-    var playlistFile: File? = null
-    var pPlaylistName = ""
-    var currentPlaylistItem: PlaylistItem? = null
+    val pPlaylistName = SimpleStringProperty("plname")
+    val currentPlaylistItem = SimpleObjectProperty<PlaylistItem?>(null)
+
 
     fun shorten(s: String, len: Int) = {
         if (s.length>len) s.substring(0, len) + ".." else s
@@ -96,7 +94,7 @@ object MusicPlayer {
         } else if (soundFile.matches(uri)) {
             val url = URL(uri)
             var tit = title
-            var le = if (length != null) length.toInt() else -1
+            var le = length?.toInt() ?: -1
             if (url.protocol == "file" && (length == null || title == null)) {
                 // only parse if title/length unknown
                 val (au2, al2, ti2, le2, tit2) = MusicPlayerBackend.parseSong(uri)
@@ -152,7 +150,7 @@ object MusicPlayer {
                             val ss = lengthTag.matchEntire(s)!!.groupValues
                             lengths.put(ss[1].toInt(), ss[2])
                         }
-                        else -> logger.warn("not found: <" + s + ">")
+                        else -> logger.warn("not found: <$s>")
                     }
                 }
             }
@@ -164,10 +162,9 @@ object MusicPlayer {
         }
     }
 
-    fun setPlaylistVars(f: File) {
-        playlistFile = f
-        pPlaylistName = f.getName().replace(".pls","")
-        Settings.playlistDefault = f.getPath()
+    private fun setPlaylistVars(plfile: File) {
+        pPlaylistName.value = plfile.name.replace(".pls","")
+        Settings.playlistDefault = plfile.path
         Settings.save()
     }
 
@@ -176,10 +173,13 @@ object MusicPlayer {
         savePlaylist()
     }
 
+    private fun playlistFileFromName() = File(Settings.playlistFolder + "/" + pPlaylistName.value + ".pls")
+
     fun savePlaylist() {
-        if (pPlaylistName != "") {
-            playlistFile = File(Settings.playlistFolder + "/" + pPlaylistName + ".pls")
-            if (playlistFile!!.exists()) playlistFile!!.delete()
+        if (pPlaylistName.value != "") {
+            val playlistFile = playlistFileFromName()
+            logger.info("saving to playlist ${playlistFile.path}")
+            if (playlistFile.exists()) playlistFile.delete()
             val pw = java.io.PrintWriter(playlistFile)
             pw.write("[playlist]\nNumberOfEntries=" + cPlaylist.size + "\n")
             var iii = 1
@@ -208,16 +208,16 @@ object MusicPlayer {
 
     fun dosetCurrentPlaylistItem(it: PlaylistItem) {
         logger.debug("setcurrit: it=" + it + " currit=" + currentPlaylistItem)
-        if (cPlaylist.contains(currentPlaylistItem)) currentPlaylistItem!!.isCurrent = false
-        currentPlaylistItem = it
-        currentPlaylistItem!!.isCurrent = true
-        pCurrentSong.value = currentPlaylistItem!!.title
+        if (cPlaylist.contains(currentPlaylistItem.value)) currentPlaylistItem.value?.isCurrent = false
+        currentPlaylistItem.value = it
+        currentPlaylistItem.value?.isCurrent = true
+        pCurrentSong.value = currentPlaylistItem.value?.title
     }
 
     fun getMixers() = MusicPlayerBackend.dogetMixers()
 
     fun playNext() {
-        val ci = cPlaylist.indexOf(currentPlaylistItem)
+        val ci = cPlaylist.indexOf(currentPlaylistItem.value)
         if (ci > -1 && ci < cPlaylist.size - 1) {
             dosetCurrentPlaylistItem(cPlaylist[ci + 1])
             playSong()
@@ -228,7 +228,7 @@ object MusicPlayer {
     }
 
     fun playPrevious() {
-        val ci = cPlaylist.indexOf(currentPlaylistItem)
+        val ci = cPlaylist.indexOf(currentPlaylistItem.value)
         if (ci > 0) {
             dosetCurrentPlaylistItem(cPlaylist[ci - 1])
             playSong()
@@ -250,8 +250,7 @@ object MusicPlayer {
     fun playSong() {
 
         MusicPlayerBackend.onPlayingStateChanged = { stopped, paused ->
-            pIsStopped = stopped
-            pIsPaused = paused
+            pIsPlaying.set(dogetPlaying())
         }
 
         MusicPlayerBackend.onProgress = { time, len ->
@@ -265,7 +264,7 @@ object MusicPlayer {
 
         MusicPlayerBackend.onFinished = {
             logger.debug("future.onfinished...")
-            if (!cPlaylist.contains(currentPlaylistItem)) {
+            if (!cPlaylist.contains(currentPlaylistItem.value)) {
                 logger.debug("item gone, stop")
                 dosetCurrentPlaylistItem(cPlaylist[0])
                 MusicPlayerBackend.stop()
@@ -274,12 +273,12 @@ object MusicPlayer {
             }
         }
 
-        if (currentPlaylistItem == null) dosetCurrentPlaylistItem(cPlaylist[0])
+        if (currentPlaylistItem.value == null) dosetCurrentPlaylistItem(cPlaylist[0])
         logger.debug("playsong " + currentPlaylistItem)
-        if (currentPlaylistItem == null) {
+        if (currentPlaylistItem.value == null) {
             return
         }
-        val currfile = MusicPlayerBackend.play(currentPlaylistItem!!.name, currentPlaylistItem!!.length.toDouble())
+        val currfile = MusicPlayerBackend.play(currentPlaylistItem.value!!.name, currentPlaylistItem.value!!.length.toDouble())
         updateVolume()
         pCurrentFile.value = currfile
     }
