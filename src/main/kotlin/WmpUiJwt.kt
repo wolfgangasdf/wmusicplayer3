@@ -1,21 +1,17 @@
 @file:Suppress("unused")
 
 import eu.webtoolkit.jwt.*
-import mu.KotlinLogging
-import java.util.*
-import kotlin.concurrent.fixedRateTimer
-import eu.webtoolkit.jwt.WString
-import eu.webtoolkit.jwt.WText
-import java.util.EnumSet
-import eu.webtoolkit.jwt.WLength
-import eu.webtoolkit.jwt.WSelectionBox
-import eu.webtoolkit.jwt.WContainerWidget
-import java.io.File
-import eu.webtoolkit.jwt.StandardButton
-import eu.webtoolkit.jwt.WMessageBox
 import javafx.beans.Observable
 import javafx.collections.FXCollections
 import javafx.collections.ListChangeListener
+import mu.KotlinLogging
+import java.io.File
+import java.nio.file.ClosedWatchServiceException
+import java.nio.file.Path
+import java.nio.file.StandardWatchEventKinds
+import java.nio.file.WatchService
+import java.util.*
+import kotlin.concurrent.thread
 
 
 private val logger = KotlinLogging.logger {}
@@ -33,15 +29,15 @@ class SettingsWindow : WDialog("Settings") {
         setMargin(WLength(10.0), EnumSet.of(Side.Right))
     }
     init {
-        this.isModal = true
-        this.footer.addWidget(KWPushButton("OK", "Save settings", {
+        isModal = true
+        footer.addWidget(KWPushButton("OK", "Save settings", {
             Settings.mixer = sbmixer.currentText.toString()
             Settings.save()
-            this.accept()
+            accept()
         }))
-        this.footer.addWidget(KWPushButton("Cancel", "", { this.reject() }))
+        footer.addWidget(KWPushButton("Cancel", "", { reject() }))
 
-        lplayer.addWidget(kJwtVBox(this.contents) {
+        lplayer.addWidget(kJwtVBox(contents) {
             addit(WLabel("Audio mixers:"))
             addit(sbmixer)
         })
@@ -83,7 +79,7 @@ class ModelPlaylist(app: WApplication, parent: WObject) : WAbstractTableModel(pa
 
     init {
         logger.debug("initialize ModelPlaylist...: " + WApplication.getInstance().sessionId + " threadid: " + Thread.currentThread().id)
-        lplaylist.addListener(ListChangeListener { obs ->
+        lplaylist.addListener(ListChangeListener {
             val uiLock = app.updateLock
             modelReset().trigger()
             uiLock?.release()
@@ -132,23 +128,6 @@ class ModelFiles(parent: WObject) : WAbstractTableModel(parent) {
 
 }
 
-
-
-object BackendSingleton {
-    init {
-        fixedRateTimer("testt", false, 0, 1000, {
-            Thread.sleep(1000)
-//            println("timer! app=$app ${Date().time} ${app?.cplayer?.songinfo1}")
-            val uiLock = app?.updateLock
-            app?.cplayer?.songinfo2?.setText(Date().time.toString())
-            app?.triggerUpdate()
-            uiLock?.release()
-        })
-    }
-
-    var app: JwtApplication? = null
-}
-
 class CPlayer(app: JwtApplication) : WContainerWidget() {
     private val lplayer = WVBoxLayout(this)
     private val btplay = KWPushButton("►", "Toggle play/pause", { MusicPlayer.dotoggle() })
@@ -157,9 +136,24 @@ class CPlayer(app: JwtApplication) : WContainerWidget() {
     private val timecurr = WText("1:00")
     private val timelen = WText("1:05:23")
     private val songinfo1 = WText("<b>songi1</b>")
-    val songinfo2 = WText("songi2")
-    private val quickbtns = Array(6, { i -> KWPushButton("pls $i", "load Playlist $i", { println("qloadpls $i") })})
-    fun getMinutes(secs: Int): String {
+    private val songinfo2 = WText("songi2")
+    private val quickbtns = Array(Constants.NQUICKPLS, { i -> KWPushButton(Settings.getplscap(i), "load Playlist $i", {
+        if (bquickedit.text.value == "✏️") {
+            MusicPlayer.loadPlaylist(Settings.bQuickPls[i])
+            MusicPlayer.playFirst()
+        } else {
+            Settings.bQuickPls[i] = MusicPlayer.pPlaylistFile.value
+            setText(Settings.getplscap(i))
+            Settings.save()
+            println("updated quick playlist button")
+            bquickedit.setText("✏️")
+        }
+    })})
+    private val bquickedit = KWPushButton("✏️", "Click to assign quick playlist button", {
+        setText(if (text.value == "✏️") "✏️..." else "✏️")
+    })
+
+    private fun getMinutes(secs: Int): String {
         val min = Math.floor(1.0/60*secs).toInt()
         return "%01d:%02d".format(min, secs-60*min)
     }
@@ -191,14 +185,15 @@ class CPlayer(app: JwtApplication) : WContainerWidget() {
 
         lplayer.addWidget(kJwtHBox(this){
             quickbtns.forEach { qb -> addit(qb) }
+            addit(bquickedit)
         })
 
         // TODO: playlist quick buttons
 
         // TODO rename stuff to make coherent
-        MusicPlayer.pCurrentFile.addListener { obs, oldv, newv -> doUI(app) {songinfo2.setText(newv) } }
-        MusicPlayer.pCurrentSong.addListener { obs, oldv, newv -> doUI(app) {songinfo1.setText("<b>$newv</b>") } }
-        MusicPlayer.pTimePos.addListener { obs, oldv, newv -> doUI(app) {timecurr.setText(getMinutes(newv.toInt())) } }
+        MusicPlayer.pCurrentFile.addListener { obs, oldv, newv -> doUI(app) { songinfo2.setText(newv) } }
+        MusicPlayer.pCurrentSong.addListener { obs, oldv, newv -> doUI(app) { songinfo1.setText("<b>$newv</b>") } }
+        MusicPlayer.pTimePos.addListener { obs, oldv, newv -> doUI(app) { timecurr.setText(getMinutes(newv.toInt())) } }
         MusicPlayer.pTimeLen.addListener { obs, oldv, newv -> doUI(app) {
             timelen.setText(getMinutes(newv.toInt()))
             if (slider.maximum != MusicPlayer.pTimeLen.intValue()) slider.maximum = MusicPlayer.pTimeLen.intValue()
@@ -210,7 +205,7 @@ class CPlayer(app: JwtApplication) : WContainerWidget() {
 
 class CPlaylist(app: JwtApplication) : WContainerWidget() {
     private val lplaylist = WVBoxLayout(this)
-    var mplaylist: ModelPlaylist? = null
+    private var mplaylist: ModelPlaylist? = null
     private val plname = WLineEdit("<pl name>")
 
     private val tvplaylist = kJwtGeneric({ WTableView() }) {
@@ -234,7 +229,7 @@ class CPlaylist(app: JwtApplication) : WContainerWidget() {
     init {
         lplaylist.addWidget(kJwtHBox(this){
             addit(plname, 1)
-            addit(KWPushButton("save", "Save current playlist to current name", {
+            addit(KWPushButton("save", "Save current playlist in playlist folder", {
                 if (Settings.playlistFolder == "") {
                     WMessageBox.show("Info", "<p>You need to assign a playlist folder first!</p>", EnumSet.of(StandardButton.Ok))
                 } else {
@@ -256,7 +251,7 @@ class CPlaylist(app: JwtApplication) : WContainerWidget() {
     }
 }
 
-class CFiles(val app: JwtApplication) : WContainerWidget() {
+class CFiles(private val app: JwtApplication) : WContainerWidget() {
     private val lfiles = WVBoxLayout(this)
     private var mfiles: ModelFiles? = null
     private val currentfolder = WText("currentfolder")
@@ -289,6 +284,39 @@ class CFiles(val app: JwtApplication) : WContainerWidget() {
             }
         })
     }
+
+    private class DirWatcher {
+        private fun Path.watch() : WatchService {
+            val watchService = this.fileSystem.newWatchService()
+            register(watchService, StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_MODIFY, StandardWatchEventKinds.ENTRY_DELETE)
+            return watchService
+        }
+
+        var watchThread: Thread? = null
+        var watcher: WatchService? = null
+
+        fun watchOneDir(dir: File, callback: () -> Unit) {
+            watcher?.close() // stops the take() in thread
+            watchThread = thread(start = true) {
+                val path = dir.toPath()
+                // println("watcher (${dir.name} ${Thread.currentThread().id}): started")
+                watcher = path.watch()
+                try {
+                    // don't loop because callback will start another thread before tak() started again... while (true) {
+                    val key = watcher!!.take() // blocks
+                    if (key != null) {
+                        key.reset()
+                        callback()
+                    }
+                } catch (e: ClosedWatchServiceException) {
+                    // println("watcher (${dir.name} ${Thread.currentThread().id}): ClosedWatchServiceException!")
+                }
+                // println("watcher (${dir.name} ${Thread.currentThread().id}): ended")
+            }
+        }
+    }
+
+    private val dirWatcher = DirWatcher()
     private fun loadDir(selectFile: File? = null) {
         mfiles!!.lfiles.clear()
         val fdir = File(Settings.pCurrentFolder)
@@ -305,6 +333,7 @@ class CFiles(val app: JwtApplication) : WContainerWidget() {
                     tvfiles.scrollTo(mi)
                 }
             }
+            dirWatcher.watchOneDir(fdir, { println("watch: loaddir!"); doUI(app, { loadDir(selectFile) }) })
         }
     }
 
@@ -353,7 +382,7 @@ class CFiles(val app: JwtApplication) : WContainerWidget() {
                 } else changeDir(Settings.playlistFolder)
             }))
             addit(KWPushButton("✖", "Delete selected playlist file", {
-                tvfiles.selectedIndexes.forEach { mi ->
+                tvfiles.selectedIndexes.reversed().forEach { mi ->
                     val f = mfiles!!.lfiles[mi.row]
                     if (f.name.endsWith(".pls")) {
                         f.delete()
@@ -376,10 +405,10 @@ class CFiles(val app: JwtApplication) : WContainerWidget() {
 }
 
 class JwtApplication(env: WEnvironment) : WApplication(env) {
-    val cplayer = CPlayer(this)
-    val cplaylist = CPlaylist(this)
-    val cfiles = CFiles(this)
-    val tInfo = WText("info")
+    private val cplayer = CPlayer(this)
+    private val cplaylist = CPlaylist(this)
+    private val cfiles = CFiles(this)
+    private val tInfo = WText("info")
 
     override fun quit() {
         logger.debug("quit application thread=${Thread.currentThread().id} agent=${environment.agent}")
@@ -410,7 +439,6 @@ class JwtApplication(env: WEnvironment) : WApplication(env) {
             addit(tInfo, 1)
         }, 2, 0, 1, 2)
 
-        BackendSingleton.app = this
         enableUpdates()
 
         logger.info("Application initialized!")

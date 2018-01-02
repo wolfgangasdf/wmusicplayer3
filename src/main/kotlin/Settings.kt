@@ -6,26 +6,29 @@ import java.util.*
 
 private val logger = KotlinLogging.logger {}
 
+
+// TODO move to musicplayer.kt? some things should update the UI to avoid race conditions (e.g. pls folder / names).
+// also: must be atomic???
 object Settings {
 
     var playlistDefault = ""
     var pCurrentFolder = ""
     var playlistFolder = ""
     var recentDirs = Stack<String>()
-    val bQuickPls = mutableListOf<String>()
+    val bQuickPls = mutableListOf<String>() // TODO this should be an observable property
     var mixer = ""
 
-    var firstRun = false
+    private var firstRun = false
+    private val props = java.util.Properties()
 
-    val props = java.util.Properties()
-    fun getSettingsFile(): File {
-        val fp = File(".").getAbsoluteFile().getParentFile() // gets CWD!
-        return File(fp.getPath() + File.separator + "wmpsettings.txt")
+    private fun getSettingsFile(): File {
+        val fp = File(".").absoluteFile.parentFile // gets CWD!
+        return File(fp.path + File.separator + "wmpsettings.txt")
     }
 
-    fun load() {
+    private fun load() {
         val ff = getSettingsFile()
-        logger.debug("load config: settings file = " + ff.getPath())
+        logger.debug("load config: settings file = " + ff.path)
         if (!ff.exists()) {
             ff.createNewFile()
             firstRun = true
@@ -45,7 +48,7 @@ object Settings {
     fun save() {
         try {
             val ff = getSettingsFile()
-            logger.debug("save config: settings file = " + ff.getPath())
+            logger.debug("save config: settings file = " + ff.path)
             props.put("volume",MusicPlayer.pVolume.value.toString())
             props.put("playlistdefault", playlistDefault)
             props.put("playlistfolder", playlistFolder)
@@ -61,6 +64,17 @@ object Settings {
             logger.debug("got ex",e)
         }
     }
+
+    fun getplscap(ii: Int): String {
+        return if (Settings.bQuickPls[ii] == "")
+            "none"
+        else {
+            val f = File(Settings.bQuickPls[ii]).name.replace(".pls","")
+            val res = f.substring(0, listOf(7,f.length).min()!!)
+            res
+        }
+    }
+
 
     init {
         load()

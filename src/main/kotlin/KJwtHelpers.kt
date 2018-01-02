@@ -42,12 +42,13 @@ fun <T>kJwtGeneric(factory: () -> T, body: T.() -> Unit): T {
 fun doUI(app: WApplication, f: () -> Unit) {
     val uiLock = app.updateLock
     f()
+    app.triggerUpdate()
     uiLock?.release()
 }
 
-class KWPushButton(text: CharSequence, tooltip: String, clicked: () -> Unit): WPushButton(text) {
+class KWPushButton(text: CharSequence, tooltip: String, myclicked: WPushButton.() -> Unit): WPushButton(text) {
     init {
-        this.clicked().addListener(this, Signal.Listener { clicked() })
+        this.clicked().addListener(this, Signal.Listener { myclicked(this) })
         this.setToolTip(tooltip)
     }
 }

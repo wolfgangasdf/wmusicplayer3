@@ -184,8 +184,18 @@ object MusicPlayerBackend {
                     if (metaN > 0) {
                         val metabb = ByteArray(metaN*16)
                         super.read(metabb, 0, metaN*16)
-                        // TODO propagate to onMetadatachanged
-                        logger.debug("metadata: " + metabb.toString(Charsets.UTF_8))
+                        val md = metabb.toString(Charsets.UTF_8).trim(0.toChar())
+                        logger.debug("received metadata: " + md)
+                        var st = ""
+                        var surl = ""
+                        md.split(";").forEach { s ->
+                            val keyval = s.split("=")
+                            if (keyval.size == 2) {
+                                if (keyval[0] == "StreamTitle") st = keyval[1]
+                                if (keyval[0] == "StreamUrl") surl = keyval[1]
+                            }
+                        }
+                        if (st + surl != "") onSongMetaChanged(st, surl)
                     }
                     readBytesUntilMeta = 0
                     tmpread
@@ -457,7 +467,7 @@ object MusicPlayerBackend {
     var onFinished: () -> Unit = {}
     var onPlayingStateChanged: (/*stopped*/Boolean, /*paused*/Boolean) -> Unit = { _, _ -> }
     var onProgress: (/*secs*/ Double, /*secstotal*/ Double) -> Unit = { _, _ -> }
-    var onSongMetaChanged: (/*metadataTODO*/ String) -> Unit =  {}
+    var onSongMetaChanged: (/*streamtitle*/ String, /*streamurl*/ String) -> Unit =  { _, _ -> }
 
 
 //    var loader: ClassLoader = _ // see above

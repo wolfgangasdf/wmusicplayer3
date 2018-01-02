@@ -3,7 +3,6 @@ import azadev.kotlin.css.dimens.*
 import kotlinx.html.*
 import kotlinx.html.stream.appendHTML
 import mu.KotlinLogging
-import java.io.File
 import javax.servlet.http.HttpServlet
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
@@ -16,22 +15,9 @@ class KotlinxHtmlServlet : HttpServlet() {
     override fun doGet(request: HttpServletRequest?, response: HttpServletResponse?) {
 
         val playlab = if (MusicPlayer.dogetPlaying()) "pause" else "play"
-        val volume = "%02d".format(MusicPlayer.pVolume)
-        val currentsong = MusicPlayer.pCurrentSong
-        val currentfile = MusicPlayer.pCurrentFile
-        fun getplscap(ii: Int): String {
-            return if (Settings.bQuickPls[ii] == "")
-                "none"
-            else {
-                val f = File(Settings.bQuickPls[ii]).name.replace(".pls","")
-                val res = ii.toString() + ": " + f.substring(0, listOf(5,f.length).min()!!)
-                res
-            }
-        }
-
-
-
-
+        val volume = "%02d".format(MusicPlayer.pVolume.value)
+        val currentsong = MusicPlayer.pCurrentSong.value
+        val currentfile = MusicPlayer.pCurrentFile.value
 
         val css = Stylesheet {
             body {
@@ -92,17 +78,16 @@ class KotlinxHtmlServlet : HttpServlet() {
                         +" "
                         input(name="action", type=InputType.submit, classes = "button" ) { value="refresh" }
                     }
-                    +currentsong.value
+                    +currentsong
                     br
                     div { style = "font-size:small"
-                        +currentfile.value
+                        +currentfile
                     }
                     br
                     for (i in 0 until Constants.NQUICKPLS) {
-                        input(name="action", type=InputType.submit, classes = "button" ) { value=getplscap(i) }
+                        input(name="pls-$i", type=InputType.submit, classes = "button" ) { value=Settings.getplscap(i) }
                         +" "
                     }
-
                 }
             }
         }
@@ -112,7 +97,6 @@ class KotlinxHtmlServlet : HttpServlet() {
         if (req != null) {
             val p = req.getParameter("action")
             if (p != null) {
-                val plpatt = "([0-9]): (.*)".toRegex()
                 operator fun Regex.contains(text: CharSequence): Boolean = this.matches(text)
                 when(p) {
                     "play","pause" -> MusicPlayer.dotoggle()
@@ -122,15 +106,14 @@ class KotlinxHtmlServlet : HttpServlet() {
                     "next" -> MusicPlayer.playNext()
                     "refresh" -> {  }
                     else -> {
-                        if (plpatt.matches(p)) {
-                            val i = plpatt.matchEntire(p)!!.groupValues[1].toInt()
-                            MusicPlayer.loadPlaylist(Settings.bQuickPls[i])
-                            MusicPlayer.playFirst()
-                        } else {
-                            logger.warn("unknown action " + p)
-                        }
+                        logger.warn("unknown action " + p)
                     }
                 }
+            }
+            val quickpls = req.parameterNames.toList().find { pn -> pn.startsWith("pls-") }
+            if (quickpls != null) {
+                MusicPlayer.loadPlaylist(Settings.bQuickPls[quickpls.replace("pls-", "").toInt()])
+                MusicPlayer.playFirst()
             }
             resp!!.sendRedirect("/mobile") // reload
         }
