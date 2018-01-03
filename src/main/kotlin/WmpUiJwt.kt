@@ -20,6 +20,11 @@ enum class UIMode {
     UINORMAL, UIMINI, UISINGLECOL
 }
 
+private fun getMinutes(secs: Int): String {
+    val min = Math.floor(1.0/60*secs).toInt()
+    return "%01d:%02d".format(min, secs-60*min)
+}
+
 class SettingsWindow : WDialog("Settings") {
     private val lplayer = WVBoxLayout(this.contents)
     private val mixers = MusicPlayer.getMixers()
@@ -61,20 +66,19 @@ class ModelPlaylist(app: WApplication, parent: WObject) : WAbstractTableModel(pa
 
     override fun getData(index: WModelIndex, role: Int): Any? {
         return when (role) {
-            ItemDataRole.DisplayRole -> WString(if (index.column == 1) lplaylist[index.row].title else "")
+            ItemDataRole.DisplayRole -> WString(
+                    when(index.column) {
+                        1 -> lplaylist[index.row].title
+                        2 -> getMinutes(lplaylist[index.row].length)
+                        else -> ""
+                    }
+            )
             else -> null
         }
     }
 
     override fun getHeaderData(section: Int, orientation: Orientation, role: Int): Any? {
-        return if (orientation === Orientation.Horizontal) {
-            when (role) {
-                ItemDataRole.DisplayRole -> if (section == 1) "Title" else ""
-                else -> null
-            }
-        } else {
-            null
-        }
+        return null
     }
 
     init {
@@ -110,18 +114,11 @@ class ModelFiles(parent: WObject) : WAbstractTableModel(parent) {
     }
 
     override fun getHeaderData(section: Int, orientation: Orientation, role: Int): Any? {
-        return if (orientation === Orientation.Horizontal) {
-            when (role) {
-                ItemDataRole.DisplayRole -> if (section == 1) "Filename" else "xxx"
-                else -> null
-            }
-        } else {
-            null
-        }
+        return null
     }
 
     init {
-        lfiles.addListener { obs: Observable ->
+        lfiles.addListener { _: Observable ->
             modelReset().trigger()
         }
     }
@@ -131,8 +128,16 @@ class ModelFiles(parent: WObject) : WAbstractTableModel(parent) {
 class CPlayer(app: JwtApplication) : WContainerWidget() {
     private val lplayer = WVBoxLayout(this)
     private val btplay = KWPushButton("►", "Toggle play/pause", { MusicPlayer.dotoggle() })
-    private val slider = WSlider()
-    private val volume = WText("0")
+    private val slider = kJwtGeneric( { WSlider() }, {
+        isNativeControl = true // doesn't work if not!
+        tickPosition = WSlider.NoTicks
+        height = btplay.height
+        valueChanged().addListener(this, { i ->
+            println("slider: $i")
+            MusicPlayer.skipTo(i.toDouble())
+        })
+    })
+    private val volume = WText(MusicPlayer.pVolume.value.toString())
     private val timecurr = WText("1:00")
     private val timelen = WText("1:05:23")
     private val songinfo1 = WText("<b>songi1</b>")
@@ -153,17 +158,7 @@ class CPlayer(app: JwtApplication) : WContainerWidget() {
         setText(if (text.value == "✏️") "✏️..." else "✏️")
     })
 
-    private fun getMinutes(secs: Int): String {
-        val min = Math.floor(1.0/60*secs).toInt()
-        return "%01d:%02d".format(min, secs-60*min)
-    }
-
     init {
-        slider.isNativeControl = true // doesn't work if not!
-        slider.tickPosition = WSlider.NoTicks
-        slider.height = btplay.height
-        slider.valueChanged().addListener(this, { i -> println("slider: $i") })
-
         lplayer.addWidget(kJwtHBox(this){
             addit(KWPushButton("⇠", "Previous song", { MusicPlayer.playPrevious() }))
             addit(btplay)
@@ -188,18 +183,19 @@ class CPlayer(app: JwtApplication) : WContainerWidget() {
             addit(bquickedit)
         })
 
-        // TODO: playlist quick buttons
-
         // TODO rename stuff to make coherent
-        MusicPlayer.pCurrentFile.addListener { obs, oldv, newv -> doUI(app) { songinfo2.setText(newv) } }
-        MusicPlayer.pCurrentSong.addListener { obs, oldv, newv -> doUI(app) { songinfo1.setText("<b>$newv</b>") } }
-        MusicPlayer.pTimePos.addListener { obs, oldv, newv -> doUI(app) { timecurr.setText(getMinutes(newv.toInt())) } }
-        MusicPlayer.pTimeLen.addListener { obs, oldv, newv -> doUI(app) {
+        MusicPlayer.pCurrentFile.addListener { _, _, newv -> doUI(app) { songinfo2.setText(newv) } }
+        MusicPlayer.pCurrentSong.addListener { _, _, newv -> doUI(app) { songinfo1.setText("<b>$newv</b>") } }
+        MusicPlayer.pTimePos.addListener { _, _, newv -> doUI(app) {
+            timecurr.setText(getMinutes(newv.toInt()))
+            slider.value = newv.toInt()
+        } }
+        MusicPlayer.pTimeLen.addListener { _, _, newv -> doUI(app) {
             timelen.setText(getMinutes(newv.toInt()))
             if (slider.maximum != MusicPlayer.pTimeLen.intValue()) slider.maximum = MusicPlayer.pTimeLen.intValue()
         } }
-        MusicPlayer.pVolume.addListener { obs, oldv, newv -> doUI(app) { volume.setText(getMinutes(newv.toInt())) } }
-        MusicPlayer.pIsPlaying.addListener { obs, oldv, newv -> doUI(app) { btplay.setText(if (newv) "❙❙" else "►") } }
+        MusicPlayer.pVolume.addListener { _, _, newv -> doUI(app) { volume.setText(newv.toString()) } }
+        MusicPlayer.pIsPlaying.addListener { _, _, newv -> doUI(app) { btplay.setText(if (newv) "❙❙" else "►") } }
     }
 }
 
@@ -211,19 +207,41 @@ class CPlaylist(app: JwtApplication) : WContainerWidget() {
     private val tvplaylist = kJwtGeneric({ WTableView() }) {
         mplaylist = ModelPlaylist(app,this)
         model = mplaylist
-        rowHeaderCount = 1
         isSortingEnabled = false
         setAlternatingRowColors(true)
         rowHeight = WLength(28.0)
-
         setColumnWidth(0, WLength(0.0))
         setColumnWidth(1, WLength(300.0))
-        headerHeight = WLength(28.0)
+        setColumnWidth(2, WLength(50.0))
+        headerHeight = WLength(0.0)
         selectionMode = SelectionMode.ExtendedSelection
         selectionBehavior = SelectionBehavior.SelectRows
         editTriggers = EnumSet.of<WAbstractItemView.EditTrigger>(WAbstractItemView.EditTrigger.NoEditTrigger)
         resize(WLength(2000.0), WLength(2000.0))
-        doubleClicked().addListener(this, { mi, me -> println(" dclick: " + if (mi != null) mplaylist!!.lplaylist[mi.row] else "none") })
+        doubleClicked().addListener(this, { mi, _ ->
+            if (mi != null) {
+                MusicPlayer.dosetCurrentPlaylistIdx(mi.row)
+                MusicPlayer.playSong()
+            }
+        })
+        class ItemDelegate(parent: WObject): WItemDelegate(parent) {
+            override fun update(widget: WWidget?, index: WModelIndex?, flags: EnumSet<ViewItemRenderFlag>?): WWidget {
+                val wid = super.update(widget, index, flags)
+                if (wid is IndexText) {
+                    println("huhu: ${wid.index.row} <> ${MusicPlayer.pCurrentPlaylistIdx.value}")
+                    if (wid.index.row == MusicPlayer.pCurrentPlaylistIdx.value) {
+                        println("huhu!!!!")
+                        // TODO doesn't work
+//                        wid.addStyleClass("info")
+                        wid.setOffsets(10)//setStyleClass("info")
+                    }
+                }
+                return wid
+            }
+
+        }
+        setItemDelegateForColumn(1, ItemDelegate(this))
+        setItemDelegateForColumn(2, ItemDelegate(this))
     }
 
     init {
@@ -247,7 +265,8 @@ class CPlaylist(app: JwtApplication) : WContainerWidget() {
 
         lplaylist.addWidget(tvplaylist, 1)
 
-        MusicPlayer.pPlaylistName.addListener { obs, oldv, newv -> doUI(app) { plname.text = newv } }
+        MusicPlayer.pPlaylistName.addListener { _, _, newv -> doUI(app) { plname.text = newv } }
+        MusicPlayer.pCurrentPlaylistIdx.addListener { _, _, _ -> doUI(app) { tvplaylist.refresh() ; println("XXX: refreshed pls!") } }
     }
 }
 
@@ -259,25 +278,23 @@ class CFiles(private val app: JwtApplication) : WContainerWidget() {
     private val tvfiles = kJwtGeneric({ WTableView() }) {
         mfiles = ModelFiles(this)
         model = mfiles
-        rowHeaderCount = 1
         isSortingEnabled = false
         setAlternatingRowColors(true)
         rowHeight = WLength(28.0)
-
         setColumnWidth(0, WLength(0.0))
         setColumnWidth(1, WLength(300.0))
-        headerHeight = WLength(28.0)
+        headerHeight = WLength(0.0)
         selectionMode = SelectionMode.ExtendedSelection
         selectionBehavior = SelectionBehavior.SelectRows
         editTriggers = EnumSet.of<WAbstractItemView.EditTrigger>(WAbstractItemView.EditTrigger.NoEditTrigger)
         resize(WLength(2000.0), WLength(2000.0))
-        doubleClicked().addListener(this, { mi, me ->
+        doubleClicked().addListener(this, { mi, _ ->
             if (mi != null) {
                 val f = mfiles!!.lfiles[mi.row]
                 if (!f.isDirectory) addFileToPlaylist(f)
             }
         })
-        clicked().addListener(this, { mi, me ->
+        clicked().addListener(this, { mi, _ ->
             if (mi != null) {
                 val f = mfiles!!.lfiles[mi.row]
                 if (f.isDirectory) changeDir(f.path)

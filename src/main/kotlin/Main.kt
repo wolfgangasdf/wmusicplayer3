@@ -19,11 +19,13 @@ fun main(args: Array<String>) {
     logger.debug("debug")
     logger.trace("trace")
 
+    MusicPlayer
+
     val server = Server(8080)
 
     val context = ServletContextHandler(ServletContextHandler.SESSIONS)
-
     context.baseResource = Resource.newResource("/WebRoot") // TODO does this work? no
+    context.maxFormKeys = -1 // important otherwise table fails after some scrolling.
 
     val shMobile = ServletHolder("mobile", KotlinxHtmlServlet::class.java)
     context.addServlet(shMobile, "/mobile/*")
