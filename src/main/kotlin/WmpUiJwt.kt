@@ -61,7 +61,7 @@ class ModelPlaylist(app: WApplication, parent: WObject) : WAbstractTableModel(pa
 
     //bug: can't scroll first column bug: add thin column before!
     override fun getColumnCount(parent: WModelIndex?): Int {
-        return if (parent == null) 2 else 0
+        return if (parent == null) 3 else 0
     }
 
     override fun getData(index: WModelIndex, role: Int): Any? {
@@ -88,6 +88,12 @@ class ModelPlaylist(app: WApplication, parent: WObject) : WAbstractTableModel(pa
             modelReset().trigger()
             uiLock?.release()
         })
+    }
+
+    // ugly hack to update style of cell...
+    fun updateRow(row: Int) {
+        for (c in 0..getColumnCount(null))
+            setData(row, c, getData(row, c))
     }
 
 }
@@ -202,7 +208,7 @@ class CPlayer(app: JwtApplication) : WContainerWidget() {
 class CPlaylist(app: JwtApplication) : WContainerWidget() {
     private val lplaylist = WVBoxLayout(this)
     private var mplaylist: ModelPlaylist? = null
-    private val plname = WLineEdit("<pl name>")
+    private val plname = WLineEdit(MusicPlayer.pPlaylistName.value)
 
     private val tvplaylist = kJwtGeneric({ WTableView() }) {
         mplaylist = ModelPlaylist(app,this)
@@ -228,20 +234,15 @@ class CPlaylist(app: JwtApplication) : WContainerWidget() {
             override fun update(widget: WWidget?, index: WModelIndex?, flags: EnumSet<ViewItemRenderFlag>?): WWidget {
                 val wid = super.update(widget, index, flags)
                 if (wid is IndexText) {
-                    println("huhu: ${wid.index.row} <> ${MusicPlayer.pCurrentPlaylistIdx.value}")
-                    if (wid.index.row == MusicPlayer.pCurrentPlaylistIdx.value) {
-                        println("huhu!!!!")
-                        // TODO doesn't work
-//                        wid.addStyleClass("info")
-                        wid.setOffsets(10)//setStyleClass("info")
-                    }
+                    // TODO doesn't work
+                    println("huhu: ${wid.index.row} <> ${MusicPlayer.pCurrentPlaylistIdx.value}  ${wid.styleClass}")
+                    wid.toggleStyleClass("selected", (wid.index.row == MusicPlayer.pCurrentPlaylistIdx.value))
+                    println("huhu: ${wid.index.row} <> ${MusicPlayer.pCurrentPlaylistIdx.value}  ${wid.styleClass}")
                 }
                 return wid
             }
-
         }
-        setItemDelegateForColumn(1, ItemDelegate(this))
-        setItemDelegateForColumn(2, ItemDelegate(this))
+        itemDelegate = ItemDelegate(this)
     }
 
     init {
@@ -266,7 +267,18 @@ class CPlaylist(app: JwtApplication) : WContainerWidget() {
         lplaylist.addWidget(tvplaylist, 1)
 
         MusicPlayer.pPlaylistName.addListener { _, _, newv -> doUI(app) { plname.text = newv } }
-        MusicPlayer.pCurrentPlaylistIdx.addListener { _, _, _ -> doUI(app) { tvplaylist.refresh() ; println("XXX: refreshed pls!") } }
+        fun updateRow(row: Int) {
+            val mi = mplaylist!!.getIndex(row, 2)
+            tvplaylist.itemDelegate.update(tvplaylist.itemWidget(mi), mi, EnumSet.noneOf(ViewItemRenderFlag::class.java))
+//            mplaylist!!.updateRow(row)
+        }
+        //TODO still doesn't work https://redmine.webtoolkit.eu/boards/2/topics/10034?r=10045#message-10045
+        MusicPlayer.pCurrentPlaylistIdx.addListener { _, oldv, newv -> doUI(app) {
+            updateRow(oldv.toInt())
+            updateRow(newv.toInt())
+//            tvplaylist.refresh()
+            println("XXX: refreshed pls!")
+        } }
     }
 }
 
