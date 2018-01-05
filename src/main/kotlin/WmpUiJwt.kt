@@ -50,7 +50,6 @@ class SettingsWindow : WDialog("Settings") {
     }
 }
 
-// TODO need iscurr?
 class ModelPlaylist(app: WApplication, parent: WObject) : WAbstractTableModel(parent) {
 
     val lplaylist = MusicPlayer.cPlaylist
@@ -189,7 +188,6 @@ class CPlayer(app: JwtApplication) : WContainerWidget() {
             addit(bquickedit)
         })
 
-        // TODO rename stuff to make coherent
         MusicPlayer.pCurrentFile.addListener { _, _, newv -> doUI(app) { songinfo2.setText(newv) } }
         MusicPlayer.pCurrentSong.addListener { _, _, newv -> doUI(app) { songinfo1.setText("<b>$newv</b>") } }
         MusicPlayer.pTimePos.addListener { _, _, newv -> doUI(app) {
@@ -216,14 +214,18 @@ class CPlaylist(app: JwtApplication) : WContainerWidget() {
         isSortingEnabled = false
         setAlternatingRowColors(true)
         rowHeight = WLength(28.0)
+        positionScheme = PositionScheme.Relative // TODO doesn't work
+//        setColumnWidth(0, WLength(0.0, WLength.Unit.Percentage))
+//        setColumnWidth(1, WLength(70.0, WLength.Unit.Percentage))
+//        setColumnWidth(2, WLength(30.0, WLength.Unit.Percentage))
         setColumnWidth(0, WLength(0.0))
-        setColumnWidth(1, WLength(300.0))
+        setColumnWidth(1, WLength(345.0))
         setColumnWidth(2, WLength(50.0))
         headerHeight = WLength(0.0)
         selectionMode = SelectionMode.ExtendedSelection
         selectionBehavior = SelectionBehavior.SelectRows
         editTriggers = EnumSet.of<WAbstractItemView.EditTrigger>(WAbstractItemView.EditTrigger.NoEditTrigger)
-        resize(WLength(2000.0), WLength(2000.0))
+        resize(WLength(2000.0), WLength(2000.0)) // hack to make both lists equal width
         doubleClicked().addListener(this, { mi, _ ->
             if (mi != null) {
                 MusicPlayer.dosetCurrentPlaylistIdx(mi.row)
@@ -234,15 +236,19 @@ class CPlaylist(app: JwtApplication) : WContainerWidget() {
             override fun update(widget: WWidget?, index: WModelIndex?, flags: EnumSet<ViewItemRenderFlag>?): WWidget {
                 val wid = super.update(widget, index, flags)
                 if (wid is IndexText) {
-                    // TODO doesn't work
-                    println("huhu: ${wid.index.row} <> ${MusicPlayer.pCurrentPlaylistIdx.value}  ${wid.styleClass}")
-                    wid.toggleStyleClass("selected", (wid.index.row == MusicPlayer.pCurrentPlaylistIdx.value))
-                    println("huhu: ${wid.index.row} <> ${MusicPlayer.pCurrentPlaylistIdx.value}  ${wid.styleClass}")
+                    wid.toggleStyleClass("Wt-valid", (wid.index.row == MusicPlayer.pCurrentPlaylistIdx.value))
                 }
                 return wid
             }
         }
         itemDelegate = ItemDelegate(this)
+    }
+
+    private fun updateRow(row: Int) {
+        for (c in 0..mplaylist!!.getColumnCount(null)) {
+            val mi = mplaylist!!.getIndex(row, c)
+            tvplaylist.itemDelegate.update(tvplaylist.itemWidget(mi), mi, EnumSet.noneOf(ViewItemRenderFlag::class.java))
+        }
     }
 
     init {
@@ -263,21 +269,12 @@ class CPlaylist(app: JwtApplication) : WContainerWidget() {
                 tvplaylist.selectedIndexes.map { mi -> mi.row }.reversed().forEach { i ->  mplaylist!!.lplaylist.removeAt(i) }
             }))
         })
-
         lplaylist.addWidget(tvplaylist, 1)
 
         MusicPlayer.pPlaylistName.addListener { _, _, newv -> doUI(app) { plname.text = newv } }
-        fun updateRow(row: Int) {
-            val mi = mplaylist!!.getIndex(row, 2)
-            tvplaylist.itemDelegate.update(tvplaylist.itemWidget(mi), mi, EnumSet.noneOf(ViewItemRenderFlag::class.java))
-//            mplaylist!!.updateRow(row)
-        }
-        //TODO still doesn't work https://redmine.webtoolkit.eu/boards/2/topics/10034?r=10045#message-10045
         MusicPlayer.pCurrentPlaylistIdx.addListener { _, oldv, newv -> doUI(app) {
             updateRow(oldv.toInt())
             updateRow(newv.toInt())
-//            tvplaylist.refresh()
-            println("XXX: refreshed pls!")
         } }
     }
 }
@@ -299,7 +296,7 @@ class CFiles(private val app: JwtApplication) : WContainerWidget() {
         selectionMode = SelectionMode.ExtendedSelection
         selectionBehavior = SelectionBehavior.SelectRows
         editTriggers = EnumSet.of<WAbstractItemView.EditTrigger>(WAbstractItemView.EditTrigger.NoEditTrigger)
-        resize(WLength(2000.0), WLength(2000.0))
+        resize(WLength(2000.0), WLength(2000.0)) // hack to make both lists equal width
         doubleClicked().addListener(this, { mi, _ ->
             if (mi != null) {
                 val f = mfiles!!.lfiles[mi.row]
@@ -451,7 +448,7 @@ class JwtApplication(env: WEnvironment) : WApplication(env) {
 
         setCssTheme("polished")
 
-        useStyleSheet(WLink("style/everywidgetx.css")) // TODO this does not work (returns web app due to /*)
+        // useStyleSheet(WLink("style/everywidgetx.css")) // this does not work (returns web app due to /*)
 
 //        theme = WBootstrapTheme()
 
@@ -487,7 +484,7 @@ class JwtServlet : WtServlet() {
 
     init {
         logger.info("servlet init...")
-//        configuration.setProgressiveBootstrap(true) // TODO testing
+//        configuration.setProgressiveBootstrap(true) // should I?
         configuration.favicon = "/favicon.ico" // TODO nothing works, hardcoded paths in jwt...
 
         super.init()
