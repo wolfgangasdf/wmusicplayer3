@@ -79,7 +79,7 @@ dependencies {
     compile "com.googlecode.soundlibs:vorbisspi:1.0.3.3"
     compile "com.googlecode.soundlibs:jlayer:1.0.1.4"
     compile "com.googlecode.soundlibs:basicplayer:3.0.0.0"
-    compile "org.jflac:jflac-codec:1.5.1"
+    compile "org.jflac:jflac-codec:1.5.2"
     // "com.googlecode.soundlibs" % "tritonus-share" % "0.3.7.4"
 
 }

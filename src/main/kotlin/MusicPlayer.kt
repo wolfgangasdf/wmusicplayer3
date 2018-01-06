@@ -97,7 +97,7 @@ object MusicPlayer {
                 tit = url.path
                 if (tit.startsWith("/")) tit = tit.substring(1)
             }
-            logger.debug("adding: tit=$tit le=$le")
+            logger.debug("adding: uri=$uri tit=$tit le=$le")
             val newitem = PlaylistItem(uri, tit!!, le)
             if (beforeId == null)
                 cPlaylist += newitem

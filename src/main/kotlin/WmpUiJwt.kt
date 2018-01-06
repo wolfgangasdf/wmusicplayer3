@@ -347,14 +347,24 @@ class CFiles(private val app: JwtApplication) : WContainerWidget() {
         }
     }
 
+    private fun listMusicfilesDirs(fdir: File): List<File> {
+        var cc = fdir.listFiles( { file -> Constants.soundFilePls.matches(file.name) || (file.isDirectory && !file.name.startsWith(".")) })
+        cc = cc.sortedBy { a -> a.name.toLowerCase() }.toTypedArray()
+        return cc.toList()
+    }
+
+    private fun recursiveListMusicFiles(f: File): List<File> {
+        val these = listMusicfilesDirs(f).toList()
+        return these.plus(these.filter { ff -> ff.isDirectory }.flatMap { fff -> recursiveListMusicFiles(fff).toList() })
+    }
+
     private val dirWatcher = DirWatcher()
     private fun loadDir(selectFile: File? = null) {
         mfiles!!.lfiles.clear()
         val fdir = File(Settings.pCurrentFolder)
         if (fdir.exists()) {
             currentfolder.setText(Settings.pCurrentFolder)
-            var cc = fdir.listFiles( { file -> Constants.soundFilePls.matches(file.name) || (file.isDirectory && !file.name.startsWith(".")) })
-            cc = cc.sortedBy { a -> a.name.toLowerCase() }.toTypedArray()
+            val cc = listMusicfilesDirs(fdir)
             mfiles!!.lfiles.addAll(cc)
             if (selectFile != null) {
                 val sidx = cc.indexOfFirst { c -> c.path == selectFile.path }
@@ -393,7 +403,7 @@ class CFiles(private val app: JwtApplication) : WContainerWidget() {
                 mfiles!!.lfiles.forEach { f -> addFileToPlaylist(f) }
             }))
             addit(KWPushButton("+++", "Add all files in current folder recursively to playlist", {
-                File(currentfolder.text.toString()).walkTopDown().forEach { f -> addFileToPlaylist(f) }
+                recursiveListMusicFiles(File(currentfolder.text.toString())).forEach { f ->  addFileToPlaylist(f) }
             }))
             addit(KWPushButton("⇧", "Go to parent folder", {
                 val newcf = File(Settings.pCurrentFolder).parent

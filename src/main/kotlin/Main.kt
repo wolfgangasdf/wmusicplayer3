@@ -25,7 +25,7 @@ fun main(args: Array<String>) {
 
     val context = ServletContextHandler(ServletContextHandler.SESSIONS)
     context.baseResource = Resource.newResource("/WebRoot") // TODO does this work? no
-    context.maxFormKeys = -1 // important otherwise table fails after some scrolling.
+    context.maxFormKeys = 5000 // important otherwise table fails after some scrolling.
 
     val shMobile = ServletHolder("mobile", KotlinxHtmlServlet::class.java)
     context.addServlet(shMobile, "/mobile/*")
