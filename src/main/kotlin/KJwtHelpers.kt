@@ -1,6 +1,7 @@
 @file:Suppress("unused")
 
 import eu.webtoolkit.jwt.*
+import java.util.*
 
 
 // for all box layouts where widgets can be added simply
@@ -11,9 +12,10 @@ open class KJwtBox(type: Int, parent: WContainerWidget): WContainerWidget(parent
         else -> throw IllegalStateException("wrong box type $type")
     }
     init {
+        mylayout.setContentsMargins(0,0,0,0)
         this.layout = mylayout
     }
-    fun addit(child: WWidget, stretch: Int = 0) {
+    fun addit(child: WWidget, stretch: Int = 0, alignmentFlag: EnumSet<AlignmentFlag> = EnumSet.noneOf(AlignmentFlag::class.java)) {
         mylayout.addWidget(child, stretch)
     }
 }
@@ -52,3 +54,16 @@ class KWPushButton(text: CharSequence, tooltip: String, myclicked: WPushButton.(
         this.setToolTip(tooltip)
     }
 }
+
+class KWTableView : WTableView() {
+    var onLayoutSizeChanged: (w: Int, h: Int) -> Unit = { w: Int, h: Int -> {} }
+    override fun layoutSizeChanged(width: Int, height: Int) {
+        onLayoutSizeChanged(width, height)
+        super.layoutSizeChanged(width, height)
+    }
+
+    init {
+        isLayoutSizeAware = true
+    }
+}
+

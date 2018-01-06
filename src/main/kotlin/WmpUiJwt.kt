@@ -164,6 +164,8 @@ class CPlayer(app: JwtApplication) : WContainerWidget() {
     })
 
     init {
+        btplay.width = WLength(30.0)
+        songinfo2.height = WLength(30.0)
         lplayer.addWidget(kJwtHBox(this){
             addit(KWPushButton("⇠", "Previous song", { MusicPlayer.playPrevious() }))
             addit(btplay)
@@ -208,19 +210,18 @@ class CPlaylist(app: JwtApplication) : WContainerWidget() {
     private var mplaylist: ModelPlaylist? = null
     private val plname = WLineEdit(MusicPlayer.pPlaylistName.value)
 
-    private val tvplaylist = kJwtGeneric({ WTableView() }) {
+    private val tvplaylist = kJwtGeneric({ KWTableView() }) {
         mplaylist = ModelPlaylist(app,this)
         model = mplaylist
         isSortingEnabled = false
         setAlternatingRowColors(true)
         rowHeight = WLength(28.0)
         positionScheme = PositionScheme.Relative // TODO doesn't work
-//        setColumnWidth(0, WLength(0.0, WLength.Unit.Percentage))
-//        setColumnWidth(1, WLength(70.0, WLength.Unit.Percentage))
-//        setColumnWidth(2, WLength(30.0, WLength.Unit.Percentage))
-        setColumnWidth(0, WLength(0.0))
-        setColumnWidth(1, WLength(345.0))
-        setColumnWidth(2, WLength(50.0))
+        onLayoutSizeChanged = { w, _ ->
+            setColumnWidth(0, WLength(0.0))
+            setColumnWidth(1, WLength(w - model.getColumnCount(null)*7.0 - 50))
+            setColumnWidth(2, WLength(50.0))
+        }
         headerHeight = WLength(0.0)
         selectionMode = SelectionMode.ExtendedSelection
         selectionBehavior = SelectionBehavior.SelectRows
@@ -245,6 +246,7 @@ class CPlaylist(app: JwtApplication) : WContainerWidget() {
     }
 
     private fun updateRow(row: Int) {
+        @Suppress("LoopToCallChain")
         for (c in 0..mplaylist!!.getColumnCount(null)) {
             val mi = mplaylist!!.getIndex(row, c)
             tvplaylist.itemDelegate.update(tvplaylist.itemWidget(mi), mi, EnumSet.noneOf(ViewItemRenderFlag::class.java))
@@ -284,14 +286,16 @@ class CFiles(private val app: JwtApplication) : WContainerWidget() {
     private var mfiles: ModelFiles? = null
     private val currentfolder = WText("currentfolder")
 
-    private val tvfiles = kJwtGeneric({ WTableView() }) {
+    private val tvfiles = kJwtGeneric({ KWTableView() }) {
         mfiles = ModelFiles(this)
         model = mfiles
         isSortingEnabled = false
         setAlternatingRowColors(true)
         rowHeight = WLength(28.0)
-        setColumnWidth(0, WLength(0.0))
-        setColumnWidth(1, WLength(300.0))
+        onLayoutSizeChanged = { w, _ ->
+            setColumnWidth(0, WLength(0.0))
+            setColumnWidth(1, WLength(w - model.getColumnCount(null)*7.0))
+        }
         headerHeight = WLength(0.0)
         selectionMode = SelectionMode.ExtendedSelection
         selectionBehavior = SelectionBehavior.SelectRows
@@ -448,22 +452,22 @@ class JwtApplication(env: WEnvironment) : WApplication(env) {
 
         setCssTheme("polished")
 
-        // useStyleSheet(WLink("style/everywidgetx.css")) // this does not work (returns web app due to /*)
+        // for WText
+        styleSheet.addRule("body", "font-family: verdana, helvetica, tahoma, sans-serif; font-size: 13px;")
 
-//        theme = WBootstrapTheme()
-
-        val lmain = WGridLayout(root)
-        lmain.addWidget(cplayer, 0, 0, 1, 2)
-        lmain.addWidget(cplaylist, 1, 0, 1, 1)
-        lmain.addWidget(cfiles, 1, 2, 1, 1)
-        lmain.setRowStretch(1, 1)
+        val lmain = WVBoxLayout(root)
+        lmain.addWidget(cplayer, 0, AlignmentFlag.AlignLeft)
+        lmain.addWidget(kJwtHBox(root, {
+            addit(cplaylist, 1)
+            addit(cfiles, 1)
+        }), 1)
         lmain.addWidget(kJwtHBox(root) {
             addit(KWPushButton("debug", "...", {
                 logger.debug("debug: ${env.hasAjax()}")
                 //logger.debug("debug playlist=" + MusicPlayer.cPlaylist.joinToString { pli -> pli.name })
             }), 0)
             addit(tInfo, 1)
-        }, 2, 0, 1, 2)
+        }, 0)
 
         enableUpdates()
 
