@@ -32,6 +32,9 @@ private val logger = KotlinLogging.logger {}
 
 object MusicPlayer {
 
+//    var loader: ClassLoader? = null
+//    fun setContextClassLoader() { Thread.currentThread().contextClassLoader = loader }
+//
     // public observables
     val pCurrentFile = SimpleStringProperty("currfile")
     val pCurrentSong = SimpleStringProperty("currsong")

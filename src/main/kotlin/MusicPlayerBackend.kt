@@ -11,6 +11,7 @@ import mu.KotlinLogging
 import org.jflac.FLACDecoder
 import org.jflac.metadata.Metadata
 import java.util.concurrent.CompletableFuture
+import javax.sound.sampled.spi.AudioFileReader
 
 /*
 You can call play() all the time, also from onFinished!
@@ -20,6 +21,10 @@ private val logger = KotlinLogging.logger {}
 // this is the backend actually playing songs, doesn't know about scaladin.
 // it plays gapless, i.e., you have to supply it with new songs within the thread
 object MusicPlayerBackend {
+//
+//    var loader: ClassLoader? = null
+//    fun setContextClassLoader() { Thread.currentThread().contextClassLoader = loader }
+//
     enum class Actions(val i: Int) {
         ANOTHING(0), ASTOP(1), ASKIPREL(2), ASKIPTO(3)
     }
@@ -58,6 +63,8 @@ object MusicPlayerBackend {
         val tit = File(uri).name
         var le = -1
         try {
+//            println("XXXXX1 audio file readers[${Thread.currentThread().id}]: " + com.sun.media.sound.JDK13Services.getProviders(AudioFileReader::class.java).joinToString { x -> x.toString() })
+//
             if (url.file.endsWith(".flac")) {
                 val fis = FileInputStream(url.file)
                 val decoder = FLACDecoder(fis)
@@ -469,7 +476,4 @@ object MusicPlayerBackend {
     var onProgress: (/*secs*/ Double, /*secstotal*/ Double) -> Unit = { _, _ -> }
     var onSongMetaChanged: (/*streamtitle*/ String, /*streamurl*/ String) -> Unit =  { _, _ -> }
 
-
-//    var loader: ClassLoader = _ // see above
-//    def setContextClassLoader(): Unit = Thread.currentThread().setContextClassLoader(loader)
 }

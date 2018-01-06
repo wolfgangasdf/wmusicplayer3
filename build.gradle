@@ -14,12 +14,16 @@ buildscript {
 group 'com.wolle'
 version '1.0-SNAPSHOT'
 
-apply plugin: 'kotlin'
-kotlin {
-    experimental {
-        coroutines 'enable'
-    }
+task wrapper(type: Wrapper) {
+    gradleVersion = "4.4.1"
 }
+
+apply plugin: 'kotlin'
+//kotlin {
+//    experimental {
+//        coroutines 'enable'
+//    }
+//}
 
 apply plugin: 'idea'
 idea {
@@ -28,6 +32,10 @@ idea {
         downloadSources = true
     }
 }
+
+apply plugin: 'application'
+mainClassName = 'MainKt'
+defaultTasks 'run'
 
 apply plugin: 'com.github.johnrengelman.shadow'
 shadowJar {
@@ -39,6 +47,7 @@ shadowJar {
         classifier = null
         version = null
     }
+    mergeServiceFiles() // essential to enable flac etc
 }
 
 //////////////////
