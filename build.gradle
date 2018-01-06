@@ -3,9 +3,11 @@ buildscript {
 
     repositories {
         mavenCentral()
+        jcenter() // shadowJar
     }
     dependencies {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath 'com.github.jengelman.gradle.plugins:shadow:2.0.2'
     }
 }
 
@@ -13,7 +15,6 @@ group 'com.wolle'
 version '1.0-SNAPSHOT'
 
 apply plugin: 'kotlin'
-
 kotlin {
     experimental {
         coroutines 'enable'
@@ -27,6 +28,21 @@ idea {
         downloadSources = true
     }
 }
+
+apply plugin: 'com.github.johnrengelman.shadow'
+shadowJar {
+    manifest {
+        attributes 'Description': 'This is an application JAR'
+        attributes 'Implementation-Title': 'Gradle Jar File Example'
+        attributes 'Implementation-Version': version
+        attributes 'Main-Class': 'MainKt'
+        classifier = null
+        version = null
+    }
+}
+
+//////////////////
+
 
 repositories {
     mavenCentral()
