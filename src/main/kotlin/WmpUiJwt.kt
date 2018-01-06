@@ -12,6 +12,7 @@ import java.nio.file.StandardWatchEventKinds
 import java.nio.file.WatchService
 import java.util.*
 import kotlin.concurrent.thread
+import kotlin.concurrent.timerTask
 
 
 private val logger = KotlinLogging.logger {}
@@ -50,12 +51,10 @@ class SettingsWindow : WDialog("Settings") {
     }
 }
 
-class ModelPlaylist(app: WApplication, parent: WObject) : WAbstractTableModel(parent) {
-
-    val lplaylist = MusicPlayer.cPlaylist
+class ModelPlaylist(private val app: WApplication, parent: WObject) : WAbstractTableModel(parent) {
 
     override fun getRowCount(parent: WModelIndex?): Int {
-        return if (parent == null) { lplaylist.size } else 0
+        return if (parent == null) { MusicPlayer.cPlaylist.size } else 0
     }
 
     //bug: can't scroll first column bug: add thin column before!
@@ -67,8 +66,8 @@ class ModelPlaylist(app: WApplication, parent: WObject) : WAbstractTableModel(pa
         return when (role) {
             ItemDataRole.DisplayRole -> WString(
                     when(index.column) {
-                        1 -> lplaylist[index.row].title
-                        2 -> getMinutes(lplaylist[index.row].length)
+                        1 -> MusicPlayer.cPlaylist[index.row].title
+                        2 -> getMinutes(MusicPlayer.cPlaylist[index.row].length)
                         else -> ""
                     }
             )
@@ -80,13 +79,21 @@ class ModelPlaylist(app: WApplication, parent: WObject) : WAbstractTableModel(pa
         return null
     }
 
+    // resetting the model to reload the playlist must not happen with high rate.
+    private var tt: TimerTask? = null
+    private fun resetModelDelayed() {
+        tt?.cancel()
+        tt = timerTask {
+            println("resetting modelplaylist... ${Thread.currentThread().id}")
+            doUI(app) { modelReset().trigger() }
+            println("resetting modelplaylist done! ${Thread.currentThread().id}")
+        }
+        Timer().schedule(tt, 500)
+    }
+
     init {
         logger.debug("initialize ModelPlaylist...: " + WApplication.getInstance().sessionId + " threadid: " + Thread.currentThread().id)
-        lplaylist.addListener(ListChangeListener {
-            val uiLock = app.updateLock
-            modelReset().trigger()
-            uiLock?.release()
-        })
+        MusicPlayer.cPlaylist.addListener(ListChangeListener { resetModelDelayed() })
     }
 
     // ugly hack to update style of cell...
@@ -269,7 +276,7 @@ class CPlaylist(app: JwtApplication) : WContainerWidget() {
                 MusicPlayer.cPlaylist.clear()
             }))
             addit(KWPushButton("✖", "Remove selected songs from playlist", {
-                tvplaylist.selectedIndexes.map { mi -> mi.row }.reversed().forEach { i ->  mplaylist!!.lplaylist.removeAt(i) }
+                tvplaylist.selectedIndexes.map { mi -> mi.row }.reversed().forEach { i ->  MusicPlayer.cPlaylist.removeAt(i) }
             }))
         })
         lplaylist.addWidget(tvplaylist, 1)
