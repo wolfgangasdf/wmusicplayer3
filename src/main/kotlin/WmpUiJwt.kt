@@ -261,6 +261,12 @@ class CPlaylist(app: JwtApplication) : WContainerWidget() {
         }
     }
 
+    fun scrollToCurrent() {
+        //mplaylist!!.modelReset().trigger() // need to refresh first because of delayed auto refresh
+        val mi = mplaylist!!.getIndex(MusicPlayer.pCurrentPlaylistIdx.value, 0)
+        tvplaylist.scrollTo(mi)
+    }
+
     init {
         lplaylist.addWidget(kJwtHBox(this){
             addit(plname, 1)
@@ -491,6 +497,14 @@ class JwtApplication(env: WEnvironment) : WApplication(env) {
 
         logger.info("Application initialized!")
         logger.debug("env: ${env.hasAjax()} ${env.hasJavaScript()} ${env.hasWebGL()}")
+
+        // init stuff after shown
+        val app = this
+        Timer().schedule(timerTask { // ugly hack, but I can't find another way.
+            println("resetting modelplaylist... ${Thread.currentThread().id}")
+            doUI(app) { cplaylist.scrollToCurrent() }
+            println("resetting modelplaylist done! ${Thread.currentThread().id}")
+        }, 1000)
     }
 }
 
