@@ -21,7 +21,7 @@ fun main(args: Array<String>) {
 
     MusicPlayer
 
-    val server = Server(8080)
+    val server = Server(8083)
 
     val context = ServletContextHandler(ServletContextHandler.SESSIONS)
     context.baseResource = Resource.newResource("/WebRoot") // TODO does this work? no

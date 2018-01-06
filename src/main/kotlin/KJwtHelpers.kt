@@ -16,7 +16,7 @@ open class KJwtBox(type: Int, parent: WContainerWidget): WContainerWidget(parent
         this.layout = mylayout
     }
     fun addit(child: WWidget, stretch: Int = 0, alignmentFlag: EnumSet<AlignmentFlag> = EnumSet.noneOf(AlignmentFlag::class.java)) {
-        mylayout.addWidget(child, stretch)
+        mylayout.addWidget(child, stretch, alignmentFlag)
     }
 }
 
@@ -56,7 +56,7 @@ class KWPushButton(text: CharSequence, tooltip: String, myclicked: WPushButton.(
 }
 
 class KWTableView : WTableView() {
-    var onLayoutSizeChanged: (w: Int, h: Int) -> Unit = { w: Int, h: Int -> {} }
+    var onLayoutSizeChanged: (w: Int, h: Int) -> Unit = { _: Int, _: Int -> }
     override fun layoutSizeChanged(width: Int, height: Int) {
         onLayoutSizeChanged(width, height)
         super.layoutSizeChanged(width, height)
@@ -67,3 +67,8 @@ class KWTableView : WTableView() {
     }
 }
 
+// binds javafx property to JWT widget, with initialization of widget!
+fun <T>bindprop2widget(app: WApplication, prop: javafx.beans.property.Property<T>, update: (oldv: T?, newv: T) -> Unit) {
+    update(null, prop.value)
+    prop.addListener { _, oldval, newval -> doUI(app) { update(oldval, newval) } }
+}

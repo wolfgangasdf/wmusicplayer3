@@ -38,7 +38,7 @@ class KotlinxHtmlServlet : HttpServlet() {
                 fontWeight = 700
                 height = 55.px
                 padding = "2px 8px"
-                textShadow = "#FE6 0 1px 0"
+//                textShadow = "#FE6 0 1px 0"
             }
 
             ".b2" {

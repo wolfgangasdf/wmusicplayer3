@@ -22,7 +22,7 @@ enum class UIMode {
 
 private fun getMinutes(secs: Int): String {
     val min = Math.floor(1.0/60*secs).toInt()
-    return "%01d:%02d".format(min, secs-60*min)
+    return if (secs >= 0) "%01d:%02d".format(min, secs-60*min) else "--"
 }
 
 class SettingsWindow : WDialog("Settings") {
@@ -138,16 +138,15 @@ class CPlayer(app: JwtApplication) : WContainerWidget() {
         tickPosition = WSlider.NoTicks
         height = btplay.height
         valueChanged().addListener(this, { i ->
-            println("slider: $i")
             MusicPlayer.skipTo(i.toDouble())
         })
     })
-    private val volume = WText(MusicPlayer.pVolume.value.toString())
+    private val volume = WText("00")
     private val timecurr = WText("1:00")
     private val timelen = WText("1:05:23")
-    private val songinfo1 = WText("<b>songi1</b>")
+    private val songinfo1 = WText("songi1")
     private val songinfo2 = WText("songi2")
-    private val quickbtns = Array(Constants.NQUICKPLS, { i -> KWPushButton(Settings.getplscap(i), "load Playlist $i", {
+    private val quickbtns = Array(Constants.NQUICKPLS, { i -> KWPushButton(Settings.getplscap(i), "Load Playlist $i", {
         if (bquickedit.text.value == "✏️") {
             MusicPlayer.loadPlaylist(Settings.bQuickPls[i])
             MusicPlayer.playFirst()
@@ -155,7 +154,6 @@ class CPlayer(app: JwtApplication) : WContainerWidget() {
             Settings.bQuickPls[i] = MusicPlayer.pPlaylistFile.value
             setText(Settings.getplscap(i))
             Settings.save()
-            println("updated quick playlist button")
             bquickedit.setText("✏️")
         }
     })})
@@ -164,6 +162,7 @@ class CPlayer(app: JwtApplication) : WContainerWidget() {
     })
 
     init {
+        width = WLength(500.0)
         btplay.width = WLength(30.0)
         songinfo2.height = WLength(30.0)
         lplayer.addWidget(kJwtHBox(this){
@@ -179,9 +178,10 @@ class CPlayer(app: JwtApplication) : WContainerWidget() {
         })
 
         lplayer.addWidget(kJwtHBox(this){
-            addit(timecurr)
-            addit(timelen)
-            addit(songinfo1, 1)
+            addit(timecurr, 0, EnumSet.of(AlignmentFlag.AlignBottom))
+            addit(WText("/"), 0, EnumSet.of(AlignmentFlag.AlignBottom))
+            addit(timelen, 0, EnumSet.of(AlignmentFlag.AlignBottom))
+            addit(songinfo1, 1, EnumSet.of(AlignmentFlag.AlignBottom))
         })
         lplayer.addWidget(songinfo2)
 
@@ -190,25 +190,25 @@ class CPlayer(app: JwtApplication) : WContainerWidget() {
             addit(bquickedit)
         })
 
-        MusicPlayer.pCurrentFile.addListener { _, _, newv -> doUI(app) { songinfo2.setText(newv) } }
-        MusicPlayer.pCurrentSong.addListener { _, _, newv -> doUI(app) { songinfo1.setText("<b>$newv</b>") } }
-        MusicPlayer.pTimePos.addListener { _, _, newv -> doUI(app) {
+        bindprop2widget(app, MusicPlayer.pCurrentSong, { _, newv -> songinfo1.setText("<b>$newv</b>") })
+        bindprop2widget(app, MusicPlayer.pCurrentFile, { _, newv -> songinfo2.setText(newv) })
+        bindprop2widget(app, MusicPlayer.pTimePos, { _, newv ->
             timecurr.setText(getMinutes(newv.toInt()))
             slider.value = newv.toInt()
-        } }
-        MusicPlayer.pTimeLen.addListener { _, _, newv -> doUI(app) {
+        })
+        bindprop2widget(app, MusicPlayer.pTimeLen, { _, newv ->
             timelen.setText(getMinutes(newv.toInt()))
             if (slider.maximum != MusicPlayer.pTimeLen.intValue()) slider.maximum = MusicPlayer.pTimeLen.intValue()
-        } }
-        MusicPlayer.pVolume.addListener { _, _, newv -> doUI(app) { volume.setText(newv.toString()) } }
-        MusicPlayer.pIsPlaying.addListener { _, _, newv -> doUI(app) { btplay.setText(if (newv) "❙❙" else "►") } }
+        })
+        bindprop2widget(app, MusicPlayer.pVolume, { _, newv -> volume.setText(newv.toString()) })
+        bindprop2widget(app, MusicPlayer.pIsPlaying, { _, newv -> btplay.setText(if (newv) "❙❙" else "►") })
     }
 }
 
 class CPlaylist(app: JwtApplication) : WContainerWidget() {
     private val lplaylist = WVBoxLayout(this)
     private var mplaylist: ModelPlaylist? = null
-    private val plname = WLineEdit(MusicPlayer.pPlaylistName.value)
+    private val plname = WLineEdit("plname")
 
     private val tvplaylist = kJwtGeneric({ KWTableView() }) {
         mplaylist = ModelPlaylist(app,this)
@@ -246,6 +246,7 @@ class CPlaylist(app: JwtApplication) : WContainerWidget() {
     }
 
     private fun updateRow(row: Int) {
+        if (row >= mplaylist!!.getRowCount(null)) return
         @Suppress("LoopToCallChain")
         for (c in 0..mplaylist!!.getColumnCount(null)) {
             val mi = mplaylist!!.getIndex(row, c)
@@ -273,11 +274,11 @@ class CPlaylist(app: JwtApplication) : WContainerWidget() {
         })
         lplaylist.addWidget(tvplaylist, 1)
 
-        MusicPlayer.pPlaylistName.addListener { _, _, newv -> doUI(app) { plname.text = newv } }
-        MusicPlayer.pCurrentPlaylistIdx.addListener { _, oldv, newv -> doUI(app) {
-            updateRow(oldv.toInt())
+        bindprop2widget(app, MusicPlayer.pPlaylistName, { _, newv -> plname.text = newv })
+        bindprop2widget(app, MusicPlayer.pCurrentPlaylistIdx, { oldv, newv ->
+            if (oldv != null) updateRow(oldv.toInt())
             updateRow(newv.toInt())
-        } }
+        })
     }
 }
 
@@ -363,7 +364,7 @@ class CFiles(private val app: JwtApplication) : WContainerWidget() {
                     tvfiles.scrollTo(mi)
                 }
             }
-            dirWatcher.watchOneDir(fdir, { println("watch: loaddir!"); doUI(app, { loadDir(selectFile) }) })
+            dirWatcher.watchOneDir(fdir, { doUI(app, { loadDir(selectFile) }) })
         }
     }
 
