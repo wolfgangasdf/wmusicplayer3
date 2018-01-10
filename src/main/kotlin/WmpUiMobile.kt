@@ -38,11 +38,14 @@ class KotlinxHtmlServlet : HttpServlet() {
                 fontWeight = 700
                 height = 55.px
                 padding = "2px 8px"
-//                textShadow = "#FE6 0 1px 0"
             }
 
             ".b2" {
                 backgroundColor = "#DAA520"
+            }
+
+            ".qpls" {
+                lineHeight = 61.px
             }
         }
         logger.debug("CSS = " + css.render())
@@ -61,6 +64,7 @@ class KotlinxHtmlServlet : HttpServlet() {
             }
             body {
                 form(action = "/mobile", method = FormMethod.post) {
+                    target = "myiframe" // to avoid redirect at post, but uses deprecated "target".
                     p {
                         h1 { +"WMusicPlayer" }
                         input(name="action", type=InputType.submit, classes = "button" ) { value="prev" }
@@ -84,10 +88,16 @@ class KotlinxHtmlServlet : HttpServlet() {
                         +currentfile
                     }
                     br
-                    for (i in 0 until Constants.NQUICKPLS) {
-                        input(name="pls-$i", type=InputType.submit, classes = "button" ) { value=Settings.getplscap(i) }
-                        +" "
+                    div("qpls") {
+                        for (i in 0 until Constants.NQUICKPLS) {
+                            input(name="pls-$i", type=InputType.submit, classes = "button" ) { value=Settings.getplscap(i) }
+                            +" "
+                        }
                     }
+                }
+                iframe {
+                    name = "myiframe"
+                    style = "display:none;"
                 }
             }
         }
