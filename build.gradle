@@ -63,7 +63,7 @@ dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
 
     compile 'io.github.microutils:kotlin-logging:1.4.8'
-    compile group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.25'
+    compile group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.25' // no colors, everything stderr
 
     compile 'org.eclipse.jetty:jetty-server:9.4.3.v20170317'
     compile 'org.eclipse.jetty:jetty-servlet:9.4.3.v20170317'

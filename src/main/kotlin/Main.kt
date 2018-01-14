@@ -55,7 +55,7 @@ fun main(args: Array<String>) {
     shJwt.isAsyncSupported = true
 //     shJwt.setInitParameter("tracking-mode", "URL") // doesn't work.
     context.addEventListener(ServletInit()) // TODO put in separate context because of this?
-    context.addServlet(shJwt, "/*")
+    context.addServlet(shJwt, "/*") // can't change this, otherwise css of JWT inaccessible
 
     server.handler = context
 
