@@ -53,14 +53,10 @@ class SettingsWindow : WDialog("Settings") {
 
 class ModelPlaylist(private val app: WApplication, parent: WObject) : WAbstractTableModel(parent) {
 
-    override fun getRowCount(parent: WModelIndex?): Int {
-        return if (parent == null) { MusicPlayer.cPlaylist.size } else 0
-    }
+    override fun getRowCount(parent: WModelIndex?): Int = if (parent == null) { MusicPlayer.cPlaylist.size } else 0
 
     //bug: can't scroll first column bug: add thin column before!
-    override fun getColumnCount(parent: WModelIndex?): Int {
-        return if (parent == null) 3 else 0
-    }
+    override fun getColumnCount(parent: WModelIndex?): Int = if (parent == null) 3 else 0
 
     override fun getData(index: WModelIndex, role: Int): Any? {
         return when (role) {
@@ -75,9 +71,7 @@ class ModelPlaylist(private val app: WApplication, parent: WObject) : WAbstractT
         }
     }
 
-    override fun getHeaderData(section: Int, orientation: Orientation, role: Int): Any? {
-        return null
-    }
+    override fun getHeaderData(section: Int, orientation: Orientation, role: Int): Any? = null
 
     // resetting the model to reload the playlist must not happen with high rate.
     private var tt: TimerTask? = null
@@ -102,6 +96,10 @@ class ModelPlaylist(private val app: WApplication, parent: WObject) : WAbstractT
             setData(row, c, getData(row, c))
     }
 
+    override fun dropEvent(e: WDropEvent?, action: DropAction?, row: Int, column: Int, parent: WModelIndex?) {
+        println("drop: $action $row $column")
+        super.dropEvent(e, action, row, column, parent)
+    }
 }
 
 
@@ -109,14 +107,10 @@ class ModelFiles(parent: WObject) : WAbstractTableModel(parent) {
 
     val lfiles = FXCollections.observableArrayList<File>()!!
 
-    override fun getRowCount(parent: WModelIndex?): Int {
-        return if (parent == null) { lfiles.size } else 0
-    }
+    override fun getRowCount(parent: WModelIndex?): Int = if (parent == null) { lfiles.size } else 0
 
     //bug: can't scroll first column bug: add thin column before!
-    override fun getColumnCount(parent: WModelIndex?): Int {
-        return if (parent == null) 2 else 0
-    }
+    override fun getColumnCount(parent: WModelIndex?): Int = if (parent == null) 2 else 0
 
     override fun getData(index: WModelIndex, role: Int): Any? {
         return when (role) {
@@ -125,9 +119,7 @@ class ModelFiles(parent: WObject) : WAbstractTableModel(parent) {
         }
     }
 
-    override fun getHeaderData(section: Int, orientation: Orientation, role: Int): Any? {
-        return null
-    }
+    override fun getHeaderData(section: Int, orientation: Orientation, role: Int): Any? = null
 
     init {
         lfiles.addListener { _: Observable ->
@@ -240,7 +232,7 @@ class CPlaylist(app: JwtApplication) : WContainerWidget() {
                 MusicPlayer.playSong()
             }
         })
-        class ItemDelegate(parent: WObject): WItemDelegate(parent) {
+        class PlsItemDelegate(parent: WObject): WItemDelegate(parent) {
             override fun update(widget: WWidget?, index: WModelIndex?, flags: EnumSet<ViewItemRenderFlag>?): WWidget {
                 val wid = super.update(widget, index, flags)
                 if (wid is IndexText) {
@@ -249,7 +241,7 @@ class CPlaylist(app: JwtApplication) : WContainerWidget() {
                 return wid
             }
         }
-        itemDelegate = ItemDelegate(this)
+        itemDelegate = PlsItemDelegate(this)
     }
 
     private fun updateRow(row: Int) {
