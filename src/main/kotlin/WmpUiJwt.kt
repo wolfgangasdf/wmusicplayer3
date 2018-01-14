@@ -59,7 +59,7 @@ class ModelPlaylist(private val app: WApplication, parent: WObject) : WAbstractT
     override fun getColumnCount(parent: WModelIndex?): Int = if (parent == null) 3 else 0
 
     override fun getData(index: WModelIndex, role: Int): Any? {
-        return when (role) {
+        return if (index.row < 0) null else when (role) {
             ItemDataRole.DisplayRole -> WString(
                     when(index.column) {
                         1 -> MusicPlayer.cPlaylist[index.row].title
@@ -78,9 +78,9 @@ class ModelPlaylist(private val app: WApplication, parent: WObject) : WAbstractT
     private fun resetModelDelayed() {
         tt?.cancel()
         tt = timerTask {
-            println("resetting modelplaylist... ${Thread.currentThread().id}")
+            MusicPlayer.updateCurrentPlaylistItem() // not nice, should be inside MP
             doUI(app) { modelReset().trigger() }
-            println("resetting modelplaylist done! ${Thread.currentThread().id}")
+            logger.debug("resetting modelplaylist done! ${Thread.currentThread().id}")
         }
         Timer().schedule(tt, 500)
     }
@@ -352,14 +352,16 @@ class CFiles(private val app: JwtApplication) : WContainerWidget() {
         }
     }
 
-    private fun listMusicfilesDirs(fdir: File): List<File> {
-        var cc = fdir.listFiles( { file -> Constants.soundFilePls.matches(file.name) || (file.isDirectory && !file.name.startsWith(".")) })
+    private fun listMusicfilesDirs(fdir: File, includePls: Boolean): List<File> {
+        var cc = fdir.listFiles( { file ->
+            (if (includePls) Constants.soundFilePls else Constants.soundFile).matches(file.name) || (file.isDirectory && !file.name.startsWith("."))
+        })
         cc = cc.sortedBy { a -> a.name.toLowerCase() }.toTypedArray()
         return cc.toList()
     }
 
     private fun recursiveListMusicFiles(f: File): List<File> {
-        val these = listMusicfilesDirs(f).toList()
+        val these = listMusicfilesDirs(f, false).toList()
         return these.plus(these.filter { ff -> ff.isDirectory }.flatMap { fff -> recursiveListMusicFiles(fff).toList() })
     }
 
@@ -369,7 +371,7 @@ class CFiles(private val app: JwtApplication) : WContainerWidget() {
         val fdir = File(Settings.pCurrentFolder)
         if (fdir.exists()) {
             currentfolder.setText(Settings.pCurrentFolder)
-            val cc = listMusicfilesDirs(fdir)
+            val cc = listMusicfilesDirs(fdir, true)
             mfiles!!.lfiles.addAll(cc)
             if (selectFile != null) {
                 val sidx = cc.indexOfFirst { c -> c.path == selectFile.path }
