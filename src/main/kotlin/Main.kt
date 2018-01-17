@@ -9,8 +9,6 @@ import javax.sound.sampled.spi.AudioFileReader
 import java.net.URLClassLoader
 
 
-
-
 fun main(args: Array<String>) {
 
     System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "TRACE")
@@ -25,12 +23,8 @@ fun main(args: Array<String>) {
 
     logger.info("audio file readers [${Thread.currentThread().id}]: " + com.sun.media.sound.JDK13Services.getProviders(AudioFileReader::class.java).joinToString { x -> x.toString() })
 
-    val cl = ClassLoader.getSystemClassLoader()
-
-    val urls = (cl as URLClassLoader).urLs
-
-    for (url in urls) {
-        println("classpath: " + url.file)
+    for (url in (ClassLoader.getSystemClassLoader() as URLClassLoader).urLs) {
+        logger.debug("classpath: " + url.file)
     }
 
 
@@ -53,9 +47,10 @@ fun main(args: Array<String>) {
 
     val shJwt = ServletHolder("jwt", JwtServlet::class.java)
     shJwt.isAsyncSupported = true
-//     shJwt.setInitParameter("tracking-mode", "URL") // doesn't work.
+//     shJwt.setInitParameter("tracking-mode", "URL") // doesn't work. the following does:
     context.addEventListener(ServletInit()) // TODO put in separate context because of this?
-    context.addServlet(shJwt, "/*") // can't change this, otherwise css of JWT inaccessible
+    context.addServlet(shJwt, "/*") // otherwise (eg /w/*) css paths in generated html wrong. bug? css is there.
+        // also not with JwtApp... setInternalPath("/w/", true) has no effect
 
     server.handler = context
 

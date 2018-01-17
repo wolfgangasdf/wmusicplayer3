@@ -49,13 +49,13 @@ object Settings {
         try {
             val ff = getSettingsFile()
             logger.debug("save config: settings file = " + ff.path)
-            props.put("volume",MusicPlayer.pVolume.value.toString())
-            props.put("playlistdefault", playlistDefault)
-            props.put("playlistfolder", playlistFolder)
-            props.put("currentfolder", pCurrentFolder)
-            props.put("mixer", mixer)
+            props["volume"] = MusicPlayer.pVolume.value.toString()
+            props["playlistdefault"] = playlistDefault
+            props["playlistfolder"] = playlistFolder
+            props["currentfolder"] = pCurrentFolder
+            props["mixer"] = mixer
             for (ii in 0 until Constants.NQUICKPLS) {
-                props.put("quickpls" + ii, bQuickPls[ii])
+                props["quickpls" + ii] = bQuickPls[ii]
             }
             val fos = FileOutputStream(ff)
             props.store(fos,null)

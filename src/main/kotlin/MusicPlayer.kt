@@ -17,10 +17,10 @@ It provides javafx observables for UI updates.
 
 object Constants {
 
-    val NQUICKPLS = 6 // number of quick playlist buttons
+    const val NQUICKPLS = 6 // number of quick playlist buttons
 
-    val tagFile = "file://"
-    val tagStream = "http://"
+    const val tagFile = "file://"
+    const val tagStream = "http://"
 
     val soundFileUri = """(file.*\.(flac|mp3|wav|ogg))|(http.*)""".toRegex()
     val soundFilePls = """([^.].*\.(flac|mp3|wav|ogg|pls))""".toRegex()
@@ -138,15 +138,15 @@ object MusicPlayer {
                         }
                         s.matches(fileTag) -> {
                             val ss = fileTag.matchEntire(s)!!.groupValues
-                            files.put(ss[1].toInt(), ss[2])
+                            files[ss[1].toInt()] = ss[2]
                         }
                         s.matches(titleTag) -> {
                             val ss = titleTag.matchEntire(s)!!.groupValues
-                            titles.put(ss[1].toInt(), ss[2])
+                            titles[ss[1].toInt()] = ss[2]
                         }
                         s.matches(lengthTag) -> {
                             val ss = lengthTag.matchEntire(s)!!.groupValues
-                            lengths.put(ss[1].toInt(), ss[2])
+                            lengths[ss[1].toInt()] = ss[2]
                         }
                         else -> logger.warn("not found: <$s>")
                     }

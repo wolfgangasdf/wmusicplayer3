@@ -509,7 +509,7 @@ class JwtServlet : WtServlet() {
     }
 
     companion object {
-        private val serialVersionUID = 1L
+        private const val serialVersionUID = 1L
     }
 
     init {
