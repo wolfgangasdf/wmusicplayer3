@@ -71,9 +71,9 @@ object MusicPlayerBackend {
                 mda.forEach { mdai ->
                     when(mdai) {
                         is org.jflac.metadata.VorbisComment -> {
-                            au = mdai.getCommentByName("ARTIST")?.getOrElse(0, { "" }) ?: ""
-                            al = mdai.getCommentByName("ALBUM")?.getOrElse(0, { "" }) ?: ""
-                            ti = mdai.getCommentByName("TITLE")?.getOrElse(0, { "" }) ?: ""
+                            au = mdai.getCommentByName("ARTIST")?.getOrElse(0) { "" } ?: ""
+                            al = mdai.getCommentByName("ALBUM")?.getOrElse(0) { "" } ?: ""
+                            ti = mdai.getCommentByName("TITLE")?.getOrElse(0) { "" } ?: ""
                         }
                         is org.jflac.metadata.StreamInfo -> {
                             if (mdai.sampleRate > 0) le = (mdai.totalSamples / mdai.sampleRate).toInt()
@@ -191,7 +191,7 @@ object MusicPlayerBackend {
                         val metabb = ByteArray(metaN*16)
                         super.read(metabb, 0, metaN*16)
                         val md = metabb.toString(Charsets.UTF_8).trim(0.toChar())
-                        logger.debug("received metadata: " + md)
+                        logger.debug("received metadata: $md")
                         var st = ""
                         var surl = ""
                         md.split(";").forEach { s ->
@@ -222,7 +222,7 @@ object MusicPlayerBackend {
 
             val url = URL(songurl)
             var ptimepos = 0.0
-            logger.debug("playing url = " + url)
+            logger.debug("playing url = $url")
 
             var currentFile = ""
 
@@ -281,7 +281,7 @@ object MusicPlayerBackend {
                     conn.setRequestProperty("Connection", "close")
                     logger.debug("contentlength: ${conn.contentLength}")
                     val metaint = conn.getHeaderFieldInt("icy-metaint", -1)
-                    logger.debug("ice: is icecast 2 stream metaint=" + metaint)
+                    logger.debug("ice: is icecast 2 stream metaint=$metaint")
                     // get stream name
                     val headers = conn.headerFields.mapValues { e -> e.value.first() }
                     headers.forEach { t, u -> logger.debug("HHH $t: $u") }
@@ -306,7 +306,7 @@ object MusicPlayerBackend {
                         currentFile = audioFile.path
                         audioIn = AudioSystem.getAudioInputStream(audioFile)
                     } else {
-                        logger.error("file not found: " + url)
+                        logger.error("file not found: $url")
                         isPlaying.set(false)
                         emitPlayingStateChanged()
                         return ""
@@ -419,14 +419,14 @@ object MusicPlayerBackend {
                 }
                 //debug("fut: end action=" + action)
             }.thenApplyAsync {
-                logger.debug("fut.onsuccess... action=" + action)
+                logger.debug("fut.onsuccess... action=$action")
                 if (action.get() != Actions.ASTOP.i) sdl!!.drain() // wait until all played
-                logger.debug("futonsucc: drain finished, action=" + action)
+                logger.debug("futonsucc: drain finished, action=$action")
                 isPlaying.set(false)
                 emitPlayingStateChanged()
                 if (action.get() != Actions.ASTOP.i) CompletableFuture.runAsync { onFinished() }
             }.handle { _, u ->
-                logger.debug("fut onFailure: error = " + u, u)
+                logger.debug("fut onFailure: error = $u", u)
             }
 
             logger.debug("playatpos/")

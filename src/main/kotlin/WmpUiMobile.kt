@@ -116,7 +116,7 @@ class KotlinxHtmlServlet : HttpServlet() {
                     "next" -> MusicPlayer.playNext()
                     "refresh" -> {  }
                     else -> {
-                        logger.warn("unknown action " + p)
+                        logger.warn("unknown action $p")
                     }
                 }
             }

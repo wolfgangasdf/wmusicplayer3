@@ -97,7 +97,7 @@ object MusicPlayer {
                 // only parse if title/length unknown
                 val (au2, al2, ti2, le2, tit2) = MusicPlayerBackend.parseSong(uri)
                 tit = tit2
-                if (au2 != "" && ti2 != "") tit = listOf(au2, al2, ti2).filter{p -> p != ""}.joinToString(" - ")
+                if (au2 != "" && ti2 != "") tit = listOf(au2, al2, ti2).asSequence().filter{ p -> p != ""}.joinToString(" - ")
                 le = le2
             } else if (url.protocol != "file" && title == null) {
                 tit = url.path
@@ -267,7 +267,7 @@ object MusicPlayer {
         }
 
         if (pCurrentPlaylistIdx.value == null) dosetCurrentPlaylistIdx(0)
-        logger.debug("playsong " + pCurrentPlaylistIdx)
+        logger.debug("playsong $pCurrentPlaylistIdx")
         if (pCurrentPlaylistIdx.value == null) {
             return
         }

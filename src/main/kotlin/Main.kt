@@ -32,7 +32,7 @@ fun main(args: Array<String>) {
 //    MusicPlayer.loader = Thread.currentThread().contextClassLoader
 //    MusicPlayerBackend.loader = Thread.currentThread().contextClassLoader
 
-    val server = Server(8083)
+    val server = Server(Settings.port)
 
     val context = ServletContextHandler(ServletContextHandler.SESSIONS)
     context.baseResource = Resource.newResource("/WebRoot") // TODO does this work? no

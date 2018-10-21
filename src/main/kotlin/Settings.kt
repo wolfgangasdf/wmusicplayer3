@@ -11,6 +11,7 @@ private val logger = KotlinLogging.logger {}
 // also: must be atomic???
 object Settings {
 
+    var port = 8083
     var playlistDefault = ""
     var pCurrentFolder = ""
     var playlistFolder = ""
@@ -35,12 +36,13 @@ object Settings {
         }
         props.load(FileInputStream(ff))
         MusicPlayer.pVolume.value = props.getProperty("volume","50").toInt()
+        port = props.getProperty("port","8083").toInt()
         playlistDefault = props.getProperty("playlistdefault","")
         playlistFolder = props.getProperty("playlistfolder","")
         pCurrentFolder = props.getProperty("currentfolder","/")
         mixer = props.getProperty("mixer","")
         for (ii in 0 until Constants.NQUICKPLS) {
-        bQuickPls += props.getProperty("quickpls" + ii, "")
+        bQuickPls += props.getProperty("quickpls$ii", "")
     }
         MusicPlayer.updateVolume()
     }
@@ -49,13 +51,14 @@ object Settings {
         try {
             val ff = getSettingsFile()
             logger.debug("save config: settings file = " + ff.path)
+            props["port"] = port.toString()
             props["volume"] = MusicPlayer.pVolume.value.toString()
             props["playlistdefault"] = playlistDefault
             props["playlistfolder"] = playlistFolder
             props["currentfolder"] = pCurrentFolder
             props["mixer"] = mixer
             for (ii in 0 until Constants.NQUICKPLS) {
-                props["quickpls" + ii] = bQuickPls[ii]
+                props["quickpls$ii"] = bQuickPls[ii]
             }
             val fos = FileOutputStream(ff)
             props.store(fos,null)

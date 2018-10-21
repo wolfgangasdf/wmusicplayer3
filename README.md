@@ -33,6 +33,7 @@ Contributions are of course very welcome!
 
 * Get Java JDK >= 8u101 and [gradle](https://gradle.org/install/)
 * check out the code (`git clone ...` or download a zip)
+* install JWT into local maven repository: see https://github.com/emweb/jwt#maven
 * I use the free community version of [IntelliJ IDEA](https://www.jetbrains.com/idea/download/), just open the project to get started.
 
 Package it:

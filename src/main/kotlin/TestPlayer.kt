@@ -1,6 +1,5 @@
 import mu.KotlinLogging
 import java.io.File
-import java.io.IOException
 import javax.sound.sampled.AudioFormat
 import javax.sound.sampled.AudioSystem
 import javax.sound.sampled.DataLine
@@ -11,21 +10,21 @@ import javax.sound.sampled.SourceDataLine
 object TestFlac {
     fun main(args: Array<String>) {
         var audioInputStream = AudioSystem.getAudioInputStream(File("/Unencrypted_Data/Music/10-thievery_corporation-safar_(the_journey)_(feat._lou_lou).flac"))
-        var audioFormat = audioInputStream.getFormat()
-        println("Play input audio format=" + audioFormat)
-        if (audioFormat.getEncoding() != AudioFormat.Encoding.PCM_SIGNED) {
+        var audioFormat = audioInputStream.format
+        println("Play input audio format=$audioFormat")
+        if (audioFormat.encoding != AudioFormat.Encoding.PCM_SIGNED) {
             // if ((audioFormat.getEncoding() != AudioFormat.Encoding.PCM) ||
             //     (audioFormat.getEncoding() == AudioFormat.Encoding.ALAW) ||
             //     (audioFormat.getEncoding() == AudioFormat.Encoding.MP3)) {
             val newFormat = AudioFormat(
                     AudioFormat.Encoding.PCM_SIGNED,
-            audioFormat.getSampleRate(),
+            audioFormat.sampleRate,
             16,
-            audioFormat.getChannels(),
-            audioFormat.getChannels() * 2,
-            audioFormat.getSampleRate(),
+            audioFormat.channels,
+            audioFormat.channels * 2,
+            audioFormat.sampleRate,
             false)
-            println("Converting audio format to " + newFormat)
+            println("Converting audio format to $newFormat")
             val newStream = AudioSystem.getAudioInputStream(newFormat, audioInputStream)
             audioFormat = newFormat
             audioInputStream = newStream
@@ -38,7 +37,7 @@ object TestFlac {
         val dataLine = AudioSystem.getLine(info) as SourceDataLine // TODO make with "is" https://kotlinlang.org/docs/reference/typecasts.html
         dataLine.open(audioFormat)
         dataLine.start()
-        val bufferSize = (audioFormat.getSampleRate() * audioFormat.getFrameSize()).toInt()
+        val bufferSize = (audioFormat.sampleRate * audioFormat.frameSize).toInt()
         val buffer = ByteArray(bufferSize)
 
         // Move the data until done or there is an error.
@@ -53,7 +52,7 @@ object TestFlac {
                     dataLine.write(buffer, 0, bytesRead)
                 }
             } // while
-        } catch(e: IOException) {
+        } catch(e: Exception) {
             e.printStackTrace()
         }
 
@@ -72,7 +71,7 @@ object TestFlac {
 @Suppress("unused")
 object TestBackend {
 
-    fun waitForPlayer() {
+    private fun waitForPlayer() {
         while (MusicPlayerBackend.dogetPlaying()) {
             println("playing...")
             Thread.sleep(200)

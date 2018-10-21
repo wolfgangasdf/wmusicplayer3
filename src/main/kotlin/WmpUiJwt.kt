@@ -36,18 +36,18 @@ class SettingsWindow : WDialog("Settings") {
     }
     init {
         isModal = true
-        footer.addWidget(KWPushButton("OK", "Save settings", {
+        footer.addWidget(KWPushButton("OK", "Save settings") {
             Settings.mixer = sbmixer.currentText.toString()
             Settings.save()
             accept()
-        }))
-        footer.addWidget(KWPushButton("Cancel", "", { reject() }))
+        })
+        footer.addWidget(KWPushButton("Cancel", "") { reject() })
 
         lplayer.addWidget(kJwtVBox(contents) {
             addit(WLabel("Audio mixers:"))
             addit(sbmixer)
         })
-        lplayer.addWidget(KWPushButton("Reset playlist folder", "set again afterwards!", { Settings.playlistFolder = "" }))
+        lplayer.addWidget(KWPushButton("Reset playlist folder", "set again afterwards!") { Settings.playlistFolder = "" })
     }
 }
 
@@ -131,21 +131,21 @@ class ModelFiles(parent: WObject) : WAbstractTableModel(parent) {
 
 class CPlayer(app: JwtApplication) : WContainerWidget() {
     private val lplayer = WVBoxLayout(this)
-    private val btplay = KWPushButton("►", "Toggle play/pause", { MusicPlayer.dotoggle() })
+    private val btplay = KWPushButton("►", "Toggle play/pause") { MusicPlayer.dotoggle() }
     private val slider = kJwtGeneric( { WSlider() }, {
         isNativeControl = true // doesn't work if not!
         tickPosition = WSlider.NoTicks
         height = btplay.height
-        valueChanged().addListener(this, { i ->
+        valueChanged().addListener(this) { i ->
             MusicPlayer.skipTo(i.toDouble())
-        })
+        }
     })
     private val volume = WText("00")
     private val timecurr = WText("1:00")
     private val timelen = WText("1:05:23")
     private val songinfo1 = WText("songi1")
     private val songinfo2 = WText("songi2")
-    private val quickbtns = Array(Constants.NQUICKPLS, { i -> KWPushButton(Settings.getplscap(i), "Load Playlist $i", {
+    private val quickbtns = Array(Constants.NQUICKPLS) { i -> KWPushButton(Settings.getplscap(i), "Load Playlist $i") {
         if (bquickedit.text.value == "✏️") {
             MusicPlayer.loadPlaylist(Settings.bQuickPls[i])
             MusicPlayer.playFirst()
@@ -155,25 +155,26 @@ class CPlayer(app: JwtApplication) : WContainerWidget() {
             Settings.save()
             bquickedit.setText("✏️")
         }
-    })})
-    private val bquickedit = KWPushButton("✏️", "Click to assign quick playlist button", {
+    }
+    }
+    private val bquickedit = KWPushButton("✏️", "Click to assign quick playlist button") {
         setText(if (text.value == "✏️") "✏️..." else "✏️")
-    })
+    }
 
     init {
         width = WLength(500.0)
         btplay.width = WLength(30.0)
         songinfo2.height = WLength(30.0)
         lplayer.addWidget(kJwtHBox(this){
-            addit(KWPushButton("⇠", "Previous song", { MusicPlayer.playPrevious() }))
+            addit(KWPushButton("⇠", "Previous song") { MusicPlayer.playPrevious() })
             addit(btplay)
-            addit(KWPushButton("⇥", "Next song", { MusicPlayer.playNext() }))
-            addit(KWPushButton("⇠", "Skip -10s", { MusicPlayer.skipRel(-10.0) }))
+            addit(KWPushButton("⇥", "Next song") { MusicPlayer.playNext() })
+            addit(KWPushButton("⇠", "Skip -10s") { MusicPlayer.skipRel(-10.0) })
             addit(slider)
-            addit(KWPushButton("⇢", "Skip +10s", { MusicPlayer.skipRel(+10.0) }))
-            addit(KWPushButton("V-", "Volume down", { MusicPlayer.incDecVolume(false) }))
+            addit(KWPushButton("⇢", "Skip +10s") { MusicPlayer.skipRel(+10.0) })
+            addit(KWPushButton("V-", "Volume down") { MusicPlayer.incDecVolume(false) })
             addit(volume)
-            addit(KWPushButton("V+", "Volume up", { MusicPlayer.incDecVolume(true) }))
+            addit(KWPushButton("V+", "Volume up") { MusicPlayer.incDecVolume(true) })
         })
 
         lplayer.addWidget(kJwtHBox(this){
@@ -189,18 +190,18 @@ class CPlayer(app: JwtApplication) : WContainerWidget() {
             addit(bquickedit)
         })
 
-        bindprop2widget(app, MusicPlayer.pCurrentSong, { _, newv -> songinfo1.setText("<b>$newv</b>") })
-        bindprop2widget(app, MusicPlayer.pCurrentFile, { _, newv -> songinfo2.setText(newv) })
-        bindprop2widget(app, MusicPlayer.pTimePos, { _, newv ->
+        bindprop2widget(app, MusicPlayer.pCurrentSong) { _, newv -> songinfo1.setText("<b>$newv</b>") }
+        bindprop2widget(app, MusicPlayer.pCurrentFile) { _, newv -> songinfo2.setText(newv) }
+        bindprop2widget(app, MusicPlayer.pTimePos) { _, newv ->
             timecurr.setText(getMinutes(newv.toInt()))
             slider.value = newv.toInt()
-        })
-        bindprop2widget(app, MusicPlayer.pTimeLen, { _, newv ->
+        }
+        bindprop2widget(app, MusicPlayer.pTimeLen) { _, newv ->
             timelen.setText(getMinutes(newv.toInt()))
             if (slider.maximum != MusicPlayer.pTimeLen.intValue()) slider.maximum = MusicPlayer.pTimeLen.intValue()
-        })
-        bindprop2widget(app, MusicPlayer.pVolume, { _, newv -> volume.setText(newv.toString()) })
-        bindprop2widget(app, MusicPlayer.pIsPlaying, { _, newv -> btplay.setText(if (newv) "❙❙" else "►") })
+        }
+        bindprop2widget(app, MusicPlayer.pVolume) { _, newv -> volume.setText(newv.toString()) }
+        bindprop2widget(app, MusicPlayer.pIsPlaying) { _, newv -> btplay.setText(if (newv) "❙❙" else "►") }
     }
 }
 
@@ -226,12 +227,12 @@ class CPlaylist(app: JwtApplication) : WContainerWidget() {
         selectionBehavior = SelectionBehavior.SelectRows
         editTriggers = EnumSet.of<WAbstractItemView.EditTrigger>(WAbstractItemView.EditTrigger.NoEditTrigger)
         resize(WLength(2000.0), WLength(2000.0)) // hack to make both lists equal width
-        doubleClicked().addListener(this, { mi, _ ->
+        doubleClicked().addListener(this) { mi, _ ->
             if (mi != null) {
                 MusicPlayer.dosetCurrentPlaylistIdx(mi.row)
                 MusicPlayer.playSong()
             }
-        })
+        }
         class PlsItemDelegate(parent: WObject): WItemDelegate(parent) {
             override fun update(widget: WWidget?, index: WModelIndex?, flags: EnumSet<ViewItemRenderFlag>?): WWidget {
                 val wid = super.update(widget, index, flags)
@@ -262,28 +263,28 @@ class CPlaylist(app: JwtApplication) : WContainerWidget() {
     init {
         lplaylist.addWidget(kJwtHBox(this){
             addit(plname, 1)
-            addit(KWPushButton("save", "Save current playlist in playlist folder", {
+            addit(KWPushButton("save", "Save current playlist in playlist folder") {
                 if (Settings.playlistFolder == "") {
                     WMessageBox.show("Info", "<p>You need to assign a playlist folder first!</p>", EnumSet.of(StandardButton.Ok))
                 } else {
                     MusicPlayer.savePlaylist(plname.text)
                     println("saved playlist") // make floating thing.
                 }
-            }))
-            addit(KWPushButton("✖✖", "Clear playlist", {
+            })
+            addit(KWPushButton("✖✖", "Clear playlist") {
                 MusicPlayer.cPlaylist.clear()
-            }))
-            addit(KWPushButton("✖", "Remove selected songs from playlist", {
+            })
+            addit(KWPushButton("✖", "Remove selected songs from playlist") {
                 tvplaylist.selectedIndexes.map { mi -> mi.row }.reversed().forEach { i ->  MusicPlayer.cPlaylist.removeAt(i) }
-            }))
+            })
         })
         lplaylist.addWidget(tvplaylist, 1)
 
-        bindprop2widget(app, MusicPlayer.pPlaylistName, { _, newv -> plname.text = newv })
-        bindprop2widget(app, MusicPlayer.pCurrentPlaylistIdx, { oldv, newv ->
+        bindprop2widget(app, MusicPlayer.pPlaylistName) { _, newv -> plname.text = newv }
+        bindprop2widget(app, MusicPlayer.pCurrentPlaylistIdx) { oldv, newv ->
             if (oldv != null) updateRow(oldv.toInt())
             updateRow(newv.toInt())
-        })
+        }
     }
 }
 
@@ -307,18 +308,18 @@ class CFiles(private val app: JwtApplication) : WContainerWidget() {
         selectionBehavior = SelectionBehavior.SelectRows
         editTriggers = EnumSet.of<WAbstractItemView.EditTrigger>(WAbstractItemView.EditTrigger.NoEditTrigger)
         resize(WLength(2000.0), WLength(2000.0)) // hack to make both lists equal width
-        doubleClicked().addListener(this, { mi, _ ->
+        doubleClicked().addListener(this) { mi, _ ->
             if (mi != null) {
                 val f = mfiles!!.lfiles[mi.row]
                 if (!f.isDirectory) addFileToPlaylist(f)
             }
-        })
-        clicked().addListener(this, { mi, _ ->
+        }
+        clicked().addListener(this) { mi, _ ->
             if (mi != null) {
                 val f = mfiles!!.lfiles[mi.row]
                 if (f.isDirectory) changeDir(f.path)
             }
-        })
+        }
     }
 
     private class DirWatcher {
@@ -353,9 +354,9 @@ class CFiles(private val app: JwtApplication) : WContainerWidget() {
     }
 
     private fun listMusicfilesDirs(fdir: File, includePls: Boolean): List<File> {
-        var cc = fdir.listFiles( { file ->
+        var cc = fdir.listFiles { file ->
             (if (includePls) Constants.soundFilePls else Constants.soundFile).matches(file.name) || (file.isDirectory && !file.name.startsWith("."))
-        })
+        }
         cc = cc.sortedBy { a -> a.name.toLowerCase() }.toTypedArray()
         return cc.toList()
     }
@@ -381,7 +382,7 @@ class CFiles(private val app: JwtApplication) : WContainerWidget() {
                     tvfiles.scrollTo(mi)
                 }
             }
-            dirWatcher.watchOneDir(fdir, { doUI(app, { loadDir(selectFile) }) })
+            dirWatcher.watchOneDir(fdir) { doUI(app) { loadDir(selectFile) } }
         }
     }
 
@@ -403,24 +404,24 @@ class CFiles(private val app: JwtApplication) : WContainerWidget() {
     init {
         lfiles.addWidget(currentfolder)
         lfiles.addWidget(kJwtHBox(this){
-            addit(KWPushButton("+", "Add current file to playlist", {
+            addit(KWPushButton("+", "Add current file to playlist") {
                 tvfiles.selectedIndexes.forEach { mi -> addFileToPlaylist(mfiles!!.lfiles[mi.row])}
-            }))
-            addit(KWPushButton("++", "Add all files in current folder to playlist", {
+            })
+            addit(KWPushButton("++", "Add all files in current folder to playlist") {
                 mfiles!!.lfiles.forEach { f -> addFileToPlaylist(f) }
-            }))
-            addit(KWPushButton("+++", "Add all files in current folder recursively to playlist", {
+            })
+            addit(KWPushButton("+++", "Add all files in current folder recursively to playlist") {
                 recursiveListMusicFiles(File(currentfolder.text.toString())).forEach { f ->  addFileToPlaylist(f) }
-            }))
-            addit(KWPushButton("⇧", "Go to parent folder", {
+            })
+            addit(KWPushButton("⇧", "Go to parent folder") {
                 val newcf = File(Settings.pCurrentFolder).parent
                 if (newcf != null) changeDir(newcf, File(Settings.pCurrentFolder))
-            }))
-            addit(KWPushButton("⇦", "Go to previous folder", {
+            })
+            addit(KWPushButton("⇦", "Go to previous folder") {
                 logger.debug("recent dirs ne=${Settings.recentDirs.isNotEmpty()} :" + Settings.recentDirs.joinToString { s -> s })
                 if (Settings.recentDirs.isNotEmpty()) changeDir(Settings.recentDirs.pop(), dontStore = true)
-            }))
-            addit(KWPushButton("pls", "Go to playlist folder (or set if empty)", {
+            })
+            addit(KWPushButton("pls", "Go to playlist folder (or set if empty)") {
                 if (Settings.playlistFolder == "") {
                     if (WMessageBox.show("Warning", "<p>Set playlist folder to current folder?</p>", EnumSet.of(StandardButton.Ok, StandardButton.Cancel))
                             == StandardButton.Ok) {
@@ -428,8 +429,8 @@ class CFiles(private val app: JwtApplication) : WContainerWidget() {
                         Settings.save()
                     }
                 } else changeDir(Settings.playlistFolder)
-            }))
-            addit(KWPushButton("✖", "Delete selected playlist file", {
+            })
+            addit(KWPushButton("✖", "Delete selected playlist file") {
                 tvfiles.selectedIndexes.reversed().forEach { mi ->
                     val f = mfiles!!.lfiles[mi.row]
                     if (f.name.endsWith(".pls")) {
@@ -438,13 +439,13 @@ class CFiles(private val app: JwtApplication) : WContainerWidget() {
                     }
                     loadDir()
                 }
-            }))
-            addit(KWPushButton("S", "Settings", {
+            })
+            addit(KWPushButton("S", "Settings") {
                 SettingsWindow().show()
-            }))
-            addit(KWPushButton("?", "Help", {
+            })
+            addit(KWPushButton("?", "Help") {
                 println("help")
-            }))
+            })
         })
         lfiles.addWidget(tvfiles, 1)
         loadDir()
@@ -475,15 +476,15 @@ class JwtApplication(env: WEnvironment) : WApplication(env) {
 
         val lmain = WVBoxLayout(root)
         lmain.addWidget(cplayer, 0, AlignmentFlag.AlignLeft)
-        lmain.addWidget(kJwtHBox(root, {
+        lmain.addWidget(kJwtHBox(root) {
             addit(cplaylist, 1)
             addit(cfiles, 1)
-        }), 1)
+        }, 1)
         lmain.addWidget(kJwtHBox(root) {
-            addit(KWPushButton("debug", "...", {
+            addit(KWPushButton("debug", "...") {
                 logger.debug("debug: ${env.hasAjax()}")
                 //logger.debug("debug playlist=" + MusicPlayer.cPlaylist.joinToString { pli -> pli.name })
-            }), 0)
+            }, 0)
             addit(tInfo, 1)
         }, 0)
 
