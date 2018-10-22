@@ -226,15 +226,14 @@ object MusicPlayerBackend {
 
             var currentFile = ""
 
-//            var length: Long = 0
             var audioFile: File? = null
             try {
                 if (url.protocol == "http") { // shoutcast streams seem to need this
 
-//                    TODO this doesn't work, somafn glitches (icy metadata)
+// This doesn't work, somafn glitches (icy metadata)
 //                    audioIn = AudioSystem.getAudioInputStream(url)
 
-                    // TODO this also doesn't work!
+// This also doesn't work!
 //                    val conn = url.openConnection()
 //                    conn.setRequestProperty("Icy-Metadata", "1") // this distorts sound!
 //                    conn.setRequestProperty("Connection", "close")
@@ -274,7 +273,12 @@ object MusicPlayerBackend {
 //                      audioIn = AudioSystem.getAudioInputStream(bInputStream)
 //                    }
 
-                    // my own attempt, WORKS for icecast & shoutcast!!!
+// works but no metadata
+//                    val conn = url.openConnection()
+//                    val bInputStream = BufferedInputStream(conn.getInputStream())
+//                    audioIn = AudioSystem.getAudioInputStream(bInputStream)
+
+                    // own icy metadata reader, WORKS for icecast & shoutcast!
                     val conn = url.openConnection()
                     conn.setRequestProperty("Accept", "*/*")
                     conn.setRequestProperty("Icy-Metadata", "1") // request it
@@ -292,17 +296,11 @@ object MusicPlayerBackend {
                     // here i must reset the read counter so that after icy-metaint bytes the metadata comes!!!!!!!!!!!!!!!!!!!!!!!!!!
                     bInputStream.readBytesUntilMeta = 0
 
-// works
-//                    val conn = url.openConnection()
-//                    val bInputStream = BufferedInputStream(conn.getInputStream())
-//                    audioIn = AudioSystem.getAudioInputStream(bInputStream)
-
                     isStream = true
                 } else if (url.protocol == "file") {
                     isStream = false
                     audioFile = File(url.file)
                     if (audioFile.exists()) {
-//                        length = audioFile.length()
                         currentFile = audioFile.path
                         audioIn = AudioSystem.getAudioInputStream(audioFile)
                     } else {
@@ -331,7 +329,7 @@ object MusicPlayerBackend {
                 if (sdl == null) {
                     logger.debug("sdl null, using default")
                     val info = DataLine.Info(SourceDataLine::class.java, decodedFormat, AudioSystem.NOT_SPECIFIED)
-                    sdl = AudioSystem.getLine(info) as SourceDataLine // TODO
+                    sdl = AudioSystem.getLine(info) as SourceDataLine
                 }
                 sdl!!.open(decodedFormat, AudioSystem.NOT_SPECIFIED)
             } catch(e: Throwable) {

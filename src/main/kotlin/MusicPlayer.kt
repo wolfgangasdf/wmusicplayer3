@@ -113,7 +113,6 @@ object MusicPlayer {
         }
     }
 
-    // TODO really implement myself, no decent simple pls parser out there!
     fun loadPlaylist(file: String) {
         val f = File(file)
         if (f.exists()) {

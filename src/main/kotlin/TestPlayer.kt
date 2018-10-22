@@ -34,7 +34,7 @@ object TestFlac {
             println("Play.playAudioStream does not handle this type of audio on this system.")
             return
         }
-        val dataLine = AudioSystem.getLine(info) as SourceDataLine // TODO make with "is" https://kotlinlang.org/docs/reference/typecasts.html
+        val dataLine = AudioSystem.getLine(info) as SourceDataLine
         dataLine.open(audioFormat)
         dataLine.start()
         val bufferSize = (audioFormat.sampleRate * audioFormat.frameSize).toInt()

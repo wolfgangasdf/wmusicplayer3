@@ -34,10 +34,14 @@ class SettingsWindow : WDialog("Settings") {
         if (mixers.contains(Settings.mixer)) currentIndex = mixers.indexOf(Settings.mixer)
         setMargin(WLength(10.0), EnumSet.of(Side.Right))
     }
+    private val tbPort = kJwtGeneric({ WText()}) {
+        setText(Settings.port.toString())
+    }
     init {
         isModal = true
         footer.addWidget(KWPushButton("OK", "Save settings") {
             Settings.mixer = sbmixer.currentText.toString()
+            Settings.port = tbPort.text.toString().toInt()
             Settings.save()
             accept()
         })
@@ -48,6 +52,10 @@ class SettingsWindow : WDialog("Settings") {
             addit(sbmixer)
         })
         lplayer.addWidget(KWPushButton("Reset playlist folder", "set again afterwards!") { Settings.playlistFolder = "" })
+        lplayer.addWidget(kJwtHBox(contents) {
+            addit(WLabel("Port (requires restart):"))
+            addit(tbPort)
+        })
     }
 }
 
@@ -216,7 +224,7 @@ class CPlaylist(app: JwtApplication) : WContainerWidget() {
         isSortingEnabled = false
         setAlternatingRowColors(true)
         rowHeight = WLength(28.0)
-        positionScheme = PositionScheme.Relative // TODO doesn't work
+        positionScheme = PositionScheme.Relative
         onLayoutSizeChanged = { w, _ ->
             setColumnWidth(0, WLength(0.0))
             setColumnWidth(1, WLength(w - model.getColumnCount(null)*7.0 - 50))

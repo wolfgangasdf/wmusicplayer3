@@ -7,8 +7,6 @@ import java.util.*
 private val logger = KotlinLogging.logger {}
 
 
-// TODO move to musicplayer.kt? some things should update the UI to avoid race conditions (e.g. pls folder / names).
-// also: must be atomic???
 object Settings {
 
     var port = 8083
@@ -16,7 +14,7 @@ object Settings {
     var pCurrentFolder = ""
     var playlistFolder = ""
     var recentDirs = Stack<String>()
-    val bQuickPls = mutableListOf<String>() // TODO this should be an observable property
+    val bQuickPls = mutableListOf<String>()
     var mixer = ""
 
     private var firstRun = false
