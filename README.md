@@ -17,7 +17,7 @@ It
 
 * Get the [Java JRE](http://www.oracle.com/technetwork/java/javase/downloads/index.html) >= 8u101. Don't forget to untick the [crapware](https://www.google.com/search?q=java+crapware) installer, and/or [disable it permanently](https://www.java.com/en/download/faq/disable_offers.xml)!
 The "JRE server" is also fine. OpenJDK is not tested.
-* download the [jar](https://bitbucket.org/wolfgang/wmusicplayer3/downloads) or `wget https://bitbucket.org/wolfgang/wmusicplayer3/downloads/wmusicplayer.jar`
+* download the [jar](https://github.com/wolfgangasdf/wmusicplayer3/releases) or `wget https://github.com/wolfgangasdf/wmusicplayer3/releases/download/SNAPSHOT/wmusicplayer3.jar`
 * Double click the jar or better run `java -Dorg.eclipse.jetty.server.Request.maxFormKeys=2000 -Djava.io.tmpdir=./tmp -jar wmusicplayer3.jar`.
 * I run this in a [GNU screen](https://en.wikipedia.org/wiki/GNU_Screen) that is started automatically.
 

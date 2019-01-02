@@ -130,6 +130,7 @@ class ModelFiles(parent: WObject) : WAbstractTableModel(parent) {
     override fun getHeaderData(section: Int, orientation: Orientation, role: Int): Any? = null
 
     init {
+        @Suppress("RedundantLambdaArrow")
         lfiles.addListener { _: Observable ->
             modelReset().trigger()
         }

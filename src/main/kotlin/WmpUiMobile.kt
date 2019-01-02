@@ -1,9 +1,8 @@
 import azadev.kotlin.css.*
-import azadev.kotlin.css.dimens.*
+import azadev.kotlin.css.dimens.em
+import azadev.kotlin.css.dimens.percent
+import azadev.kotlin.css.dimens.px
 import kotlinx.html.*
-import kotlinx.html.dom.append
-import kotlinx.html.dom.document
-import kotlinx.html.dom.serialize
 import kotlinx.html.stream.appendHTML
 import mu.KotlinLogging
 import javax.servlet.http.HttpServlet
