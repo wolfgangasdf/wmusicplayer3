@@ -37,8 +37,8 @@ object MusicPlayer {
 //    fun setContextClassLoader() { Thread.currentThread().contextClassLoader = loader }
 
     // public observables, multiple subscribers possible!
-    val pCurrentFile = SimpleStringProperty("currfile")
-    val pCurrentSong = SimpleStringProperty("currsong")
+    val pCurrentFile = SimpleStringProperty("1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 ")
+    val pCurrentSong = SimpleStringProperty("1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 ")
     val pTimePos = SimpleDoubleProperty(0.0)
     val pTimeLen = SimpleDoubleProperty(0.0)
     val pVolume = SimpleIntegerProperty(50)

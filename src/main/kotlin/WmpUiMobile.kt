@@ -1,6 +1,9 @@
 import azadev.kotlin.css.*
 import azadev.kotlin.css.dimens.*
 import kotlinx.html.*
+import kotlinx.html.dom.append
+import kotlinx.html.dom.document
+import kotlinx.html.dom.serialize
 import kotlinx.html.stream.appendHTML
 import mu.KotlinLogging
 import javax.servlet.http.HttpServlet
@@ -13,7 +16,6 @@ private val logger = KotlinLogging.logger {}
 class KotlinxHtmlServlet : HttpServlet() {
 
     override fun doGet(request: HttpServletRequest?, response: HttpServletResponse?) {
-
         val playlab = if (MusicPlayer.dogetPlaying()) "pause" else "play"
         val volume = "%02d".format(MusicPlayer.pVolume.value)
         val currentsong = MusicPlayer.pCurrentSong.value
@@ -39,18 +41,30 @@ class KotlinxHtmlServlet : HttpServlet() {
                 height = 55.px
                 padding = "2px 8px"
             }
-
             ".b2" {
                 backgroundColor = "#DAA520"
             }
-
             ".qpls" {
                 lineHeight = 61.px
+            }
+            ".currentsong" {
+                height = 1.2.em
+                maxWidth = "30rem"
+                lineHeight = 1.2
+                overflow = AUTO
+            }
+            ".currentfile" {
+                fontSize = SMALL
+                height = 2.4.em
+                maxWidth = "30rem"
+                lineHeight = 1.2
+                overflow = AUTO
             }
         }
         logger.debug("CSS = " + css.render())
 
         response!!.contentType = "text/html"
+        response.addHeader("Cache-Control", "no-cache,no-store,must-revalidate") // TODO doesn't work
 
         response.writer.appendHTML(true).html {
             head {
@@ -66,7 +80,6 @@ class KotlinxHtmlServlet : HttpServlet() {
                 form(action = "/mobile", method = FormMethod.post) {
                     target = "myiframe" // to avoid redirect at post, but uses deprecated "target".
                     p {
-                        h1 { +"WMusicPlayer" }
                         input(name="action", type=InputType.submit, classes = "button" ) { value="prev" }
                         +" "
                         input(name="action", type=InputType.submit, classes = "button") { value=playlab }
@@ -77,16 +90,15 @@ class KotlinxHtmlServlet : HttpServlet() {
                         input(name="action", type=InputType.submit, classes = "button" ) { value="vol-" }
                         +" "
                         +volume
+                        logger.debug("wrote volume to html: $volume")
                         +" "
                         input(name="action", type=InputType.submit, classes = "button" ) { value="vol+" }
                         +" "
                         input(name="action", type=InputType.submit, classes = "button" ) { value="refresh" }
                     }
-                    +currentsong
+                    div("currentsong") { +currentsong }
                     br
-                    div { style = "font-size:small"
-                        +currentfile
-                    }
+                    div("currentfile") { +currentfile }
                     br
                     div("qpls") {
                         for (i in 0 until Constants.NQUICKPLS) {
@@ -125,7 +137,9 @@ class KotlinxHtmlServlet : HttpServlet() {
                 MusicPlayer.loadPlaylist(Settings.bQuickPls[quickpls.replace("pls-", "").toInt()])
                 MusicPlayer.playFirst()
             }
-            resp!!.sendRedirect("/mobile") // reload
+//            resp!!.sendRedirect("/mobile?asdf") // reload doesn't work
+            doGet(req, resp) // send new html TODO doesn't work.
+            // TODO also disabling cache in header (above) doesn't work. WHY is browser page not refreshed??? It arrives at chrome, check the reply!
         }
     }
 
