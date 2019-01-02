@@ -70,8 +70,8 @@ dependencies {
     compile("org.eclipse.jetty:jetty-servlet:9.4.14.v20181114")
 
     // jwt
-    compile("eu.webtoolkit:jwt:3.3.11")
-    runtime("eu.webtoolkit:jwt:3.3.11")
+    compile("eu.webtoolkit:jwt:3.3.12")
+    runtime("eu.webtoolkit:jwt:3.3.12")
     compile("com.google.code.gson:gson:2.8.5") // otherwise, error with slider if opened with mac dashboard
 
     // kotlinx.html
