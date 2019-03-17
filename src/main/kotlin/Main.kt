@@ -9,7 +9,7 @@ import javax.sound.sampled.spi.AudioFileReader
 import java.net.URLClassLoader
 
 
-fun main(args: Array<String>) {
+fun main() {
 
     System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "TRACE")
     System.setProperty("org.slf4j.simpleLogger.log.org.eclipse.jetty", "INFO")

@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
-val kotlinversion = "1.3.11"
+val kotlinversion = "1.3.21"
 
 buildscript {
     repositories {
@@ -19,16 +19,16 @@ group = "com.wolle"
 version = "1.0-SNAPSHOT"
 
 plugins {
-    kotlin("jvm") version "1.3.11"
+    kotlin("jvm") version "1.3.21"
     id("idea")
     id("application")
-    id("com.github.ben-manes.versions") version "0.20.0"
-    id("com.github.johnrengelman.shadow") version "4.0.3"
+    id("com.github.ben-manes.versions") version "0.21.0"
+    id("com.github.johnrengelman.shadow") version "5.0.0"
     id("edu.sc.seis.macAppBundle") version "2.3.0"
 }
 
 tasks.withType<Wrapper> {
-    gradleVersion = "4.10.3"
+    gradleVersion = "5.2.1"
 }
 
 application {
@@ -49,7 +49,7 @@ tasks.withType<Jar> {
 
 tasks.withType<ShadowJar> {
     // uses manifest from above!
-    baseName = "app"
+    baseName = "wmusicplayer3"
     classifier = ""
     version = ""
     mergeServiceFiles() // essential to enable flac etc
@@ -64,10 +64,10 @@ repositories {
 dependencies {
     compile("org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinversion")
     compile("org.jetbrains.kotlin:kotlin-reflect:$kotlinversion")
-    compile("io.github.microutils:kotlin-logging:1.6.22")
-    compile("org.slf4j:slf4j-simple:1.8.0-beta2") // no colors, everything stderr
-    compile("org.eclipse.jetty:jetty-server:9.4.14.v20181114")
-    compile("org.eclipse.jetty:jetty-servlet:9.4.14.v20181114")
+    compile("io.github.microutils:kotlin-logging:1.6.25")
+    compile("org.slf4j:slf4j-simple:1.8.0-beta4") // no colors, everything stderr
+    compile("org.eclipse.jetty:jetty-server:9.4.15.v20190215")
+    compile("org.eclipse.jetty:jetty-servlet:9.4.15.v20190215")
 
     // jwt
     compile("eu.webtoolkit:jwt:3.3.12")

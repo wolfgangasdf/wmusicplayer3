@@ -8,7 +8,7 @@ import javax.sound.sampled.SourceDataLine
 
 @Suppress("unused")
 object TestFlac {
-    fun main(args: Array<String>) {
+    fun main() {
         var audioInputStream = AudioSystem.getAudioInputStream(File("/Unencrypted_Data/Music/10-thievery_corporation-safar_(the_journey)_(feat._lou_lou).flac"))
         var audioFormat = audioInputStream.format
         println("Play input audio format=$audioFormat")

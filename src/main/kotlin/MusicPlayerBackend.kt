@@ -114,7 +114,7 @@ object MusicPlayerBackend {
         else baseFormat.channels * 2,
         baseFormat.sampleRate,
         false)
-        logger.debug("decoformat = " + decodedFormat.toString())
+        logger.debug("decoformat = $decodedFormat")
         return decodedFormat
     }
 
