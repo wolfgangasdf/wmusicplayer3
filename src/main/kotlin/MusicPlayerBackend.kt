@@ -13,7 +13,7 @@ import org.jflac.metadata.Metadata
 import java.util.concurrent.CompletableFuture
 
 /*
-You can call play() all the time, also from onFinished!
+You can call play() all the time, also from onCompleted!
  */
 private val logger = KotlinLogging.logger {}
 
@@ -24,6 +24,16 @@ object MusicPlayerBackend {
 //    var loader: ClassLoader? = null
 //    fun setContextClassLoader() { Thread.currentThread().contextClassLoader = loader }
 //
+
+    // callbacks are run in Future {}
+    // TODO think if to put all callbacks as arguments of play()? because an old one could remain set...
+    var onCompleted: () -> Unit = {}
+    var onPlayingStateChanged: (/*stopped*/Boolean, /*paused*/Boolean) -> Unit = { _, _ -> }
+    var onProgress: (/*secs*/ Double, /*secstotal*/ Double) -> Unit = { _, _ -> }
+    var onSongMetaChanged: (/*streamtitle*/ String, /*streamurl*/ String) -> Unit =  { _, _ -> }
+
+    private var playThing = PlayThing()
+
     enum class Actions(val i: Int) {
         ANOTHING(0), ASTOP(1), ASKIPREL(2), ASKIPTO(3)
     }
@@ -129,12 +139,7 @@ object MusicPlayerBackend {
         return playThing.play2(songurl, timelen)
     }
 
-    private var playThing = PlayThing()
-
-
     class PlayThing {
-
-//        val actionLong = AtomicLong(-1)
         val actionVal = AtomicReference<Double>(0.0)
         val action = AtomicInteger(Actions.ANOTHING.i)
         val isPaused = AtomicBoolean(false)
@@ -146,7 +151,6 @@ object MusicPlayerBackend {
         private var fut: CompletableFuture<Unit>? = null
         private var volume: FloatControl? = null
         var isStream = false
-//        private var icyInputStream: IcyInputStream? = null
 
         fun setVolume(vol: Double) {
             if (volume != null) {
@@ -165,6 +169,7 @@ object MusicPlayerBackend {
         }
 
         private fun cleanUp() {
+            logger.debug("cleanup...")
             if (fut?.isDone == false) {
                 logger.error("future is not completed!")
                 throw IllegalStateException("future is not completed!")
@@ -222,7 +227,7 @@ object MusicPlayerBackend {
 
             val url = URL(songurl)
             var ptimepos = 0.0
-            logger.debug("playing url = $url")
+            logger.debug("play2: playing url = $url")
 
             var currentFile = ""
 
@@ -288,7 +293,7 @@ object MusicPlayerBackend {
                     logger.debug("ice: is icecast 2 stream metaint=$metaint")
                     // get stream name
                     val headers = conn.headerFields.mapValues { e -> e.value.first() }
-                    headers.forEach { t, u -> logger.debug("HHH $t: $u") }
+                    headers.forEach { t, u -> logger.debug("header: $t = $u") }
                     val streamname = headers.getOrDefault("icy-name", url.toString())
                     currentFile = streamname
                     val bInputStream = IcyBufferedInputStream(conn.getInputStream(), metaint)
@@ -422,7 +427,7 @@ object MusicPlayerBackend {
                 logger.debug("futonsucc: drain finished, action=$action")
                 isPlaying.set(false)
                 emitPlayingStateChanged()
-                if (action.get() != Actions.ASTOP.i) CompletableFuture.runAsync { onFinished() }
+                if (action.get() != Actions.ASTOP.i) CompletableFuture.runAsync { onCompleted() }
             }.handle { _, u ->
                 logger.debug("fut onFailure: error = $u", u)
             }
@@ -430,6 +435,9 @@ object MusicPlayerBackend {
             logger.debug("playatpos/")
 
             return currentFile
+        }
+        init {
+            logger.debug("plaything initialized!")
         }
     }
 
@@ -465,12 +473,5 @@ object MusicPlayerBackend {
         playThing.setVolume(vol)
     }
 //    fun dogetVolume() = playThing.volume!!.value
-
-    // callbacks are run in Future {}
-    // TODO think if to put all callbacks as arguments of play()? because an old one could remain set...
-    var onFinished: () -> Unit = {}
-    var onPlayingStateChanged: (/*stopped*/Boolean, /*paused*/Boolean) -> Unit = { _, _ -> }
-    var onProgress: (/*secs*/ Double, /*secstotal*/ Double) -> Unit = { _, _ -> }
-    var onSongMetaChanged: (/*streamtitle*/ String, /*streamurl*/ String) -> Unit =  { _, _ -> }
 
 }

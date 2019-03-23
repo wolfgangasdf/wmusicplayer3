@@ -79,15 +79,15 @@ object TestBackend {
     }
 
     fun main(args: Array<String>) {
-        MusicPlayerBackend.onFinished = { println("onFinished1") }
+        MusicPlayerBackend.onCompleted = { println("onFinished1") }
         print("play res = " + MusicPlayerBackend.play("file:///Unencrypted_Data/Music/111.wav", -1.0))
 
         Thread.sleep(500)
-        MusicPlayerBackend.stop() // should stop, and NOT call onFinished
+        MusicPlayerBackend.stop() // should stop, and NOT call onCompleted
         waitForPlayer()
 
         println("test play other song")
-        MusicPlayerBackend.onFinished = { println("onFinished2") }
+        MusicPlayerBackend.onCompleted = { println("onFinished2") }
         print("play res = " + MusicPlayerBackend.play("file:///Unencrypted_Data/Music/111.wav", -1.0))
         Thread.sleep(500)
         print("play res = " + MusicPlayerBackend.play("file:///Unencrypted_Data/Music/222.wav", -1.0))
@@ -96,7 +96,7 @@ object TestBackend {
         println("test gapless")
         val songs = listOf("audiocheck.net_sin_1000Hz_-3dBFS_1.5s.wav", "audiocheck.net_sin_2000Hz_-3dBFS_1.5s.wav", "audiocheck.net_sin_3000Hz_-3dBFS_1.5s.wav")
         var songi = 0
-        MusicPlayerBackend.onFinished = {
+        MusicPlayerBackend.onCompleted = {
             println("onFinished3")
             if (songi <= songs.size - 2) {
                 songi += 1
@@ -107,7 +107,7 @@ object TestBackend {
         waitForPlayer()
 
         println("test skipping")
-        MusicPlayerBackend.onFinished = {} // have to clear it...
+        MusicPlayerBackend.onCompleted = {} // have to clear it...
         MusicPlayerBackend.play("file:///Unencrypted_Data/Music/10-thievery_corporation-safar_(the_journey)_(feat._lou_lou).flac", -1.0)
         Thread.sleep(1500)
         MusicPlayerBackend.skipRel(10.0)

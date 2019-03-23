@@ -66,17 +66,23 @@ object MusicPlayer {
     }
 
     fun dotoggle() {
+        logger.debug("dotoggle: ${dogetPlaying()}")
         if (dogetPlaying()) {
             if (MusicPlayerBackend.dogetIsStream()) {
+                logger.debug("dotoggle: stopping stream...")
                 MusicPlayerBackend.stop()
             } else {
+                logger.debug("dotoggle: pause...")
                 MusicPlayerBackend.setPause(true)
             }
         } else {
-            if (MusicPlayerBackend.dogetPause())
+            if (MusicPlayerBackend.dogetPause()) {
+                logger.debug("dotoggle: unpause...")
                 MusicPlayerBackend.setPause(false)
-            else
+            } else {
+                logger.debug("dotoggle: playsong...")
                 playSong()
+            }
         }
     }
 
@@ -260,7 +266,7 @@ object MusicPlayer {
             pCurrentFile.value = streamtitle
         }
 
-        MusicPlayerBackend.onFinished = {
+        MusicPlayerBackend.onCompleted = {
             logger.debug("future.onfinished...")
             playNext()
         }
