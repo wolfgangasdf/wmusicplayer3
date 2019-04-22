@@ -179,7 +179,7 @@ object MusicPlayerBackend {
             if (sdl != null) { if (sdl!!.isOpen) { sdl!!.stop() ; sdl!!.close() } }
         }
 
-        class IcyBufferedInputStream(inps: InputStream, private val metainterval: Int) : BufferedInputStream(inps) {
+        class IcyBufferedInputStream(inps: InputStream, private var metainterval: Int) : BufferedInputStream(inps) {
             var readBytesUntilMeta = 0
 
             override fun read(): Int = 0 // not needed
@@ -197,16 +197,24 @@ object MusicPlayerBackend {
                         super.read(metabb, 0, metaN*16)
                         val md = metabb.toString(Charsets.UTF_8).trim(0.toChar())
                         logger.debug("received metadata: $md")
-                        var st = ""
-                        var surl = ""
-                        md.split(";").forEach { s ->
-                            val keyval = s.split("=")
-                            if (keyval.size == 2) {
-                                if (keyval[0] == "StreamTitle") st = keyval[1]
-                                if (keyval[0] == "StreamUrl") surl = keyval[1]
+                        // TODO testing: check if garbage. 32-175 is chars.
+                        val saneFraction = md.map { if (it.toInt() in 32..175) 1 else 0 }.sum() / md.length
+                        if (saneFraction > 0.5) {
+                            var st = ""
+                            var surl = ""
+                            md.split(";").forEach { s ->
+                                val keyval = s.split("=")
+                                if (keyval.size == 2) {
+                                    if (keyval[0] == "StreamTitle") st = keyval[1]
+                                    if (keyval[0] == "StreamUrl") surl = keyval[1]
+                                }
                             }
+                            if (st + surl != "") onSongMetaChanged(st, surl)
+                        } else {
+                            logger.warn("icystream: metadata binary, stopping to read it!!!")
+                            onSongMetaChanged("read metadata failed!", "failed!")
+                            metainterval = 0
                         }
-                        if (st + surl != "") onSongMetaChanged(st, surl)
                     }
                     readBytesUntilMeta = 0
                     tmpread
@@ -293,7 +301,7 @@ object MusicPlayerBackend {
                     logger.debug("ice: is icecast 2 stream metaint=$metaint")
                     // get stream name
                     val headers = conn.headerFields.mapValues { e -> e.value.first() }
-                    headers.forEach { t, u -> logger.debug("header: $t = $u") }
+                    headers.forEach { (t, u) -> logger.debug("header: $t = $u") }
                     val streamname = headers.getOrDefault("icy-name", url.toString())
                     currentFile = streamname
                     val bInputStream = IcyBufferedInputStream(conn.getInputStream(), metaint)

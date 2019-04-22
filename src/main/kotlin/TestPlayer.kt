@@ -78,7 +78,7 @@ object TestBackend {
         }
     }
 
-    fun main(args: Array<String>) {
+    fun main() {
         MusicPlayerBackend.onCompleted = { println("onFinished1") }
         print("play res = " + MusicPlayerBackend.play("file:///Unencrypted_Data/Music/111.wav", -1.0))
 
@@ -137,7 +137,7 @@ object TestBackend {
 
 @Suppress("unused")
 object TestStream {
-    fun main(args: Array<String>) {
+    fun main() {
 //        val url = "http://ice.somafm.com/groovesalad"
 //        val url = "http://ice1.somafm.com/deepspaceone-128-mp3"
     val url = "http://listen.radionomy.com/ABC-Lounge" // from shoutcast.com
@@ -150,7 +150,7 @@ object TestStream {
 }
 
 
-fun main(args: Array<String>) {
+fun main() {
     System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "DEBUG")
 
     val logger = KotlinLogging.logger {} // WTF, can't define Logger outside because then no debug.
@@ -162,7 +162,7 @@ fun main(args: Array<String>) {
     }
 
     testot()
-    TestStream.main(args)
+    TestStream.main()
 //    TestBackend.main(args)
 //    TestFlac.main(args)
 }

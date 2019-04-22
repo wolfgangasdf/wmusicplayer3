@@ -8,15 +8,10 @@ buildscript {
         mavenCentral()
         jcenter() // shadowJar
     }
-//    dependencies {
-//        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-//        classpath "com.github.jengelman.gradle.plugins:shadow:4.0.2"
-//        classpath "com.github.ben-manes:gradle-versions-plugin:0.20.0"
-//    }
 }
 
 group = "com.wolle"
-version = "1.0-SNAPSHOT"
+version = ""
 
 plugins {
     kotlin("jvm") version "1.3.21"
@@ -39,7 +34,7 @@ application {
 tasks.withType<Jar> {
     manifest {
         attributes(mapOf(
-                "Description" to "wmusicplayer3 jar",
+                "Description" to "wmusicplayer jar",
                 "Implementation-Title" to "WMusicPlayer",
                 "Implementation-Version" to version,
                 "Main-Class" to "MainKt"
@@ -49,9 +44,8 @@ tasks.withType<Jar> {
 
 tasks.withType<ShadowJar> {
     // uses manifest from above!
-    baseName = "wmusicplayer3"
-    classifier = ""
-    version = ""
+    archiveBaseName.set("wmusicplayer")
+    archiveClassifier.set("")
     mergeServiceFiles() // essential to enable flac etc
 }
 
