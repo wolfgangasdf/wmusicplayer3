@@ -132,13 +132,8 @@ object MusicPlayerBackend {
     fun dogetIsStream(): Boolean = playThing.isStream
 
     fun play(songurl: String, timelen: Double): (/*currentfile*/String) {
-        if (playThing.isPlaying.get()) {
-            playThing.action.set(Actions.ASTOP.i)
-            playThing.isPaused.set(false)
-            Thread.sleep(500)
-            playThing.cleanup()
-        }
-        //playThing = PlayThing()
+        playThing.cleanup() // clean up old playThing
+        playThing = PlayThing() // this is crucial: all operations from now on must act on new instance! a bit messy but fast & efficient.
         return playThing.play2(songurl, timelen)
     }
 
@@ -146,7 +141,7 @@ object MusicPlayerBackend {
         val actionVal = AtomicReference<Double>(0.0)
         val action = AtomicInteger(Actions.ANOTHING.i)
         val isPaused = AtomicBoolean(false)
-        val isPlaying = AtomicBoolean(false)
+        val isPlaying = AtomicBoolean(false) // if play in progress, can be paused
         private var sdl: SourceDataLine? = null
         private var audioIn: AudioInputStream? = null
         private var audioInDec: AudioInputStream? = null
@@ -157,6 +152,18 @@ object MusicPlayerBackend {
         private var bInputStream: IcyBufferedInputStream? = null
 
         var isStream = false
+
+        fun cleanup() { // this should be called before new playThing made.
+            action.set(Actions.ASTOP.i) // important! don't drain nor call oncompleted!
+            isPaused.set(false)
+            isPlaying.set(false)
+            bInputStream?.close()
+            (conn as? HttpURLConnection)?.disconnect()
+            audioInDec?.close()
+            audioIn?.close()
+            if (sdl != null) { if (sdl!!.isOpen) { sdl!!.stop() ; sdl!!.close() } }
+            sdl?.close()
+        }
 
         fun setVolume(vol: Double) {
             if (volume != null) {
@@ -233,10 +240,7 @@ object MusicPlayerBackend {
 
         fun play2(songurl: String, timelen: Double): (/*currentfile*/String) {
 //            setContextClassLoader()
-            if (fut?.isDone == false) {
-                logger.error("future is not completed!")
-                //throw IllegalStateException("future is not completed!")
-            }
+            if (fut?.isDone == false) throw IllegalStateException("future is not completed!")
 
             action.set(Actions.ANOTHING.i)
             isPlaying.set(true)
@@ -320,6 +324,7 @@ object MusicPlayerBackend {
             sdl!!.start()
             fut = CompletableFuture.supplyAsync {
                 // http://docs.oracle.com/javase/tutorial/sound/playing.html
+                // check isPlaying and end future if not.
                 var total = 0
                 val bufferSize = (decodedFormat!!.sampleRate * decodedFormat!!.frameSize).toInt()
                 logger.debug("samplerate=" + decodedFormat!!.sampleRate + " framesize=" + decodedFormat!!.frameSize + " buffsize=$bufferSize")
@@ -347,29 +352,31 @@ object MusicPlayerBackend {
                         Thread.sleep(250)
                     } else {
                         //debug(s"total=$total action=${action.get}")
-                        if (action.get() == Actions.ASKIPREL.i && audioFile != null) {
-                            // TODO add skip back buffer: record in hashmap all / some positions,...
-                            val dt = actionVal.get()
-                            if (dt > 0) {
-                                sdl!!.flush()
-                                total += skipBuffer((bufferSize * dt).toInt())
-                            } else {
-                                restartSong()
-                                val newpos = total - bufferSize * 10
-                                total = skipBuffer(newpos)
-                                oldTime = 0.0
-                            }
-                        } else if (action.get() == Actions.ASKIPTO.i) {
-                            if (audioFile != null) {
-                                if (actionVal.get() in 0.0..timelen) {
-                                    if (actionVal.get() != ptimepos && decodedFormat!!.sampleRate > 0) {
-                                        restartSong()
-                                        val newpos = (actionVal.get() * (decodedFormat!!.sampleRate * decodedFormat!!.frameSize)).toInt()
-                                        total = skipBuffer(newpos)
-                                        oldTime = 0.0
-                                    }
+                        if (!isStream) {
+                            if (action.get() == Actions.ASKIPREL.i && audioFile != null) {
+                                // TODO add skip back buffer: record in hashmap all / some positions,...
+                                val dt = actionVal.get()
+                                if (dt > 0) {
+                                    sdl!!.flush()
+                                    total += skipBuffer((bufferSize * dt).toInt())
+                                } else {
+                                    restartSong()
+                                    val newpos = total - bufferSize * 10
+                                    total = skipBuffer(newpos)
+                                    oldTime = 0.0
                                 }
-                                actionVal.set(-1.0)
+                            } else if (action.get() == Actions.ASKIPTO.i) {
+                                if (audioFile != null) {
+                                    if (actionVal.get() in 0.0..timelen) {
+                                        if (actionVal.get() != ptimepos && decodedFormat!!.sampleRate > 0) {
+                                            restartSong()
+                                            val newpos = (actionVal.get() * (decodedFormat!!.sampleRate * decodedFormat!!.frameSize)).toInt()
+                                            total = skipBuffer(newpos)
+                                            oldTime = 0.0
+                                        }
+                                    }
+                                    actionVal.set(-1.0)
+                                }
                             }
                         }
                         action.set(Actions.ANOTHING.i)
@@ -378,10 +385,10 @@ object MusicPlayerBackend {
                         if (bytesRead >= 0) {
                             total += bytesRead
                             var bytesleft = bytesRead
-                            while (bytesleft > 0) {
+                            while (isPlaying.get() && bytesleft > 0) {
                                 bytesleft -= sdl!!.write(buffer, 0, bytesleft)
                                 if (bytesleft > 0) { // can this happen?
-                                    logger.debug("XXXX left=$bytesleft bytesRead=$bytesRead")
+                                    logger.debug("write to sdl: bytes left! [$songurl] left=$bytesleft bytesRead=$bytesRead frame=${decodedFormat!!.frameSize}")
                                     Thread.sleep(10)
                                 }
                             }
@@ -397,28 +404,18 @@ object MusicPlayerBackend {
                 //debug("fut: end action=" + action)
             }.thenApplyAsync {
                 logger.debug("fut: thenApplyAsync [$songurl]... action=$action")
-                if (action.get() != Actions.ASTOP.i) sdl!!.drain() // wait until all played
+                // if (action.get() != Actions.ASTOP.i) sdl!!.drain() // wait until all played
+                if (action.get() == Actions.ANOTHING.i) sdl!!.drain() // wait until all played
                 logger.debug("  drain finished, action=$action")
                 isPlaying.set(false)
-                emitPlayingStateChanged()
                 if (action.get() != Actions.ASTOP.i) CompletableFuture.runAsync { onCompleted() }
             }.handle { _, u ->
                 logger.debug("fut: handle [$songurl]: error = $u", u)
                 cleanup()
                 logger.debug("fut handle [$songurl]: done")
             }
-
             logger.debug("playatpos/")
-
             return currentFile
-        }
-        fun cleanup() {
-            bInputStream?.close()
-            (conn as? HttpURLConnection)?.disconnect()
-            audioInDec?.close()
-            audioIn?.close()
-            if (sdl != null) { if (sdl!!.isOpen) { sdl!!.stop() ; sdl!!.close() } }
-            sdl?.close()
         }
         init {
             logger.debug("plaything initialized!")

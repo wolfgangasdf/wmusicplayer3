@@ -34,14 +34,14 @@ class SettingsWindow : WDialog("Settings") {
         if (mixers.contains(Settings.mixer)) currentIndex = mixers.indexOf(Settings.mixer)
         setMargin(WLength(10.0), EnumSet.of(Side.Right))
     }
-    private val tbPort = kJwtGeneric({ WText()}) {
-        setText(Settings.port.toString())
+    private val lePort = kJwtGeneric({ WLineEdit()}) {
+        text = Settings.port.toString()
     }
     init {
         isModal = true
         footer.addWidget(KWPushButton("OK", "Save settings") {
             Settings.mixer = sbmixer.currentText.toString()
-            Settings.port = tbPort.text.toString().toInt()
+            Settings.port = lePort.text.toString().toInt()
             Settings.save()
             accept()
         })
@@ -54,10 +54,30 @@ class SettingsWindow : WDialog("Settings") {
         lplayer.addWidget(KWPushButton("Reset playlist folder", "set again afterwards!") { Settings.playlistFolder = "" })
         lplayer.addWidget(kJwtHBox(contents) {
             addit(WLabel("Port (requires restart):"))
-            addit(tbPort)
+            addit(lePort)
         })
     }
 }
+
+class AddURLWindow : WDialog("Add stream URL...") {
+    private val lplayer = WVBoxLayout(this.contents)
+    private val leUrl = kJwtGeneric({ WLineEdit() }) {
+        text = "http://"
+    }
+    init {
+        isModal = true
+        footer.addWidget(KWPushButton("OK", "Add URL to playlist") {
+            if (leUrl.text.startsWith("http")) {
+                MusicPlayer.addToPlaylist(leUrl.text)
+            }
+            accept()
+        })
+        footer.addWidget(KWPushButton("Cancel", "") { reject() })
+        lplayer.addWidget(WLabel("Enter URL of mp3 stream:"))
+        lplayer.addWidget(leUrl)
+    }
+}
+
 
 class ModelPlaylist(private val app: WApplication, parent: WObject) : WAbstractTableModel(parent) {
 
@@ -285,6 +305,9 @@ class CPlaylist(app: JwtApplication) : WContainerWidget() {
             })
             addit(KWPushButton("✖", "Remove selected songs from playlist") {
                 tvplaylist.selectedIndexes.map { mi -> mi.row }.reversed().forEach { i ->  MusicPlayer.cPlaylist.removeAt(i) }
+            })
+            addit(KWPushButton("+url", "Add stream...") {
+                AddURLWindow().show()
             })
         })
         lplaylist.addWidget(tvplaylist, 1)

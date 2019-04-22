@@ -50,9 +50,10 @@ tasks.withType<ShadowJar> {
 }
 
 repositories {
-    mavenCentral()
     mavenLocal() // for jwt
+    mavenCentral()
     jcenter() // for kotlinx.html, aza-css
+    // maven { setUrl("https://jitpack.io") } // jaadec
 }
 
 dependencies {
@@ -80,6 +81,7 @@ dependencies {
     compile("com.googlecode.soundlibs:jlayer:1.0.1.4")
     compile("com.googlecode.soundlibs:basicplayer:3.0.0.0")
     compile("org.jflac:jflac-codec:1.5.2")
+    //compile("net.sourceforge.jaadec:jaad:0.8.5") // local doesn't work yet
     // "com.googlecode.soundlibs" % "tritonus-share" % "0.3.7.4"
 }
 

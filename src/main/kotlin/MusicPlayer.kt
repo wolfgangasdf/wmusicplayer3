@@ -56,9 +56,7 @@ object MusicPlayer {
     private fun getCurrentPlaylistItem() = if (pCurrentPlaylistIdx.value < 0 || pCurrentPlaylistIdx.value >= cPlaylist.size)
         null else cPlaylist[pCurrentPlaylistIdx.value]
 
-    fun shorten(s: String, len: Int) = {
-        if (s.length>len) s.substring(0, len) + ".." else s
-    }
+    fun shorten(s: String, len: Int) = if (s.length>len) s.substring(0, len) + ".." else s
 
     fun playFirst() {
         dosetCurrentPlaylistIdx(0)
