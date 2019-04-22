@@ -135,6 +135,8 @@ object MusicPlayerBackend {
         if (playThing.isPlaying.get()) {
             playThing.action.set(Actions.ASTOP.i)
             playThing.isPaused.set(false)
+            Thread.sleep(500)
+            playThing.cleanup()
         }
         //playThing = PlayThing()
         return playThing.play2(songurl, timelen)
@@ -184,6 +186,7 @@ object MusicPlayerBackend {
                 var tmpread = 0
                 while (tmpread < len) {
                     val t2 = super.read(b, off, len-tmpread)
+                    if (t2 != len-tmpread) logger.debug("readOrThrow: failed to read, got $t2!")
                     if (t2 == -1) throw Exception("readOrThrow: got -1!")
                     tmpread += t2
                 }
@@ -232,7 +235,7 @@ object MusicPlayerBackend {
 //            setContextClassLoader()
             if (fut?.isDone == false) {
                 logger.error("future is not completed!")
-                throw IllegalStateException("future is not completed!")
+                //throw IllegalStateException("future is not completed!")
             }
 
             action.set(Actions.ANOTHING.i)
@@ -248,54 +251,6 @@ object MusicPlayerBackend {
             var audioFile: File? = null
             try {
                 if (url.protocol == "http") { // shoutcast streams seem to need this
-
-// This doesn't work, somafn glitches (icy metadata)
-//                    audioIn = AudioSystem.getAudioInputStream(url)
-
-// This also doesn't work!
-//                    val conn = url.openConnection()
-//                    conn.setRequestProperty("Icy-Metadata", "1") // this distorts sound!
-//                    conn.setRequestProperty("Connection", "close")
-//                    val bInputStream = BufferedInputStream(conn.getInputStream())
-//                    val tmpb = ByteArray(4)
-//                    icyInputStream = null
-//                    // http://fox-gieg.com/patches/processing/libraries/minim/src/ddf/minim/javasound/MpegAudioFileReader.java
-//                    bInputStream.mark(4)
-//                    if (bInputStream.read(tmpb, 0, 4) > 2) {
-//                      val tmpbs = String(tmpb)
-//                        bInputStream.reset()
-//                      logger.debug("stream first 4 bytes = " + tmpbs)
-//                      if (tmpbs.toUpperCase().startsWith("ICY")) { // shoutcast
-//                        logger.debug("ice: is shoutcast stream")
-//                        icyInputStream = IcyInputStream(bInputStream)
-//                      }
-//                    }
-//                    if (icyInputStream == null) {
-//                      val metaint = conn.getHeaderField("icy-metaint")
-//                      if (metaint != null) { // icecast 2 ?
-//                          logger.debug("ice: is icecast 2 stream metaint=" + metaint)
-//                          icyInputStream = IcyInputStream(bInputStream, metaint)
-//                      }
-//                    }
-//                    if (icyInputStream != null) {
-//                      audioIn = AudioSystem.getAudioInputStream(icyInputStream)
-//                        icyInputStream!!.mark(1000)
-//                      icyInputStream!!.addTagParseListener(IcyListener.getInstance())
-//                      icyInputStream!!.addTagParseListener{ tpe: TagParseEvent ->
-//                          when (tpe.tag) {
-//                            is IcyTag -> logger.debug("icytag: ${(tpe.tag as IcyTag).valueAsString}")
-//                            else -> logger.debug("unknown tag: " + tpe.tag)
-//                          }
-//                      }
-//
-//                    } else {
-//                      audioIn = AudioSystem.getAudioInputStream(bInputStream)
-//                    }
-
-// works but no metadata
-//                    val conn = url.openConnection()
-//                    val bInputStream = BufferedInputStream(conn.getInputStream())
-//                    audioIn = AudioSystem.getAudioInputStream(bInputStream)
 
                     // own icy metadata reader, WORKS for icecast & shoutcast!
                     conn = url.openConnection()
@@ -422,7 +377,14 @@ object MusicPlayerBackend {
                         bytesRead = audioInDec!!.read(buffer, 0, bufferSize)
                         if (bytesRead >= 0) {
                             total += bytesRead
-                            sdl!!.write(buffer, 0, bytesRead)
+                            var bytesleft = bytesRead
+                            while (bytesleft > 0) {
+                                bytesleft -= sdl!!.write(buffer, 0, bytesleft)
+                                if (bytesleft > 0) { // can this happen?
+                                    logger.debug("XXXX left=$bytesleft bytesRead=$bytesRead")
+                                    Thread.sleep(10)
+                                }
+                            }
                         }
                         val newTime = if (decodedFormat!!.sampleRate >0) (total / decodedFormat!!.sampleRate / decodedFormat!!.frameSize).toDouble() else 0.0
                         if (newTime - oldTime > 2) { // update every 2 secs
@@ -434,26 +396,29 @@ object MusicPlayerBackend {
                 }
                 //debug("fut: end action=" + action)
             }.thenApplyAsync {
-                logger.debug("fut.onsuccess... action=$action")
+                logger.debug("fut: thenApplyAsync [$songurl]... action=$action")
                 if (action.get() != Actions.ASTOP.i) sdl!!.drain() // wait until all played
-                logger.debug("futonsucc: drain finished, action=$action")
+                logger.debug("  drain finished, action=$action")
                 isPlaying.set(false)
                 emitPlayingStateChanged()
                 if (action.get() != Actions.ASTOP.i) CompletableFuture.runAsync { onCompleted() }
             }.handle { _, u ->
-                logger.debug("fut handle: error = $u", u)
-                bInputStream?.close()
-                (conn as? HttpURLConnection)?.disconnect()
-                audioInDec?.close()
-                audioIn?.close()
-                if (sdl != null) { if (sdl!!.isOpen) { sdl!!.stop() ; sdl!!.close() } }
-                sdl?.close()
-                logger.debug("fut handle: done")
+                logger.debug("fut: handle [$songurl]: error = $u", u)
+                cleanup()
+                logger.debug("fut handle [$songurl]: done")
             }
 
             logger.debug("playatpos/")
 
             return currentFile
+        }
+        fun cleanup() {
+            bInputStream?.close()
+            (conn as? HttpURLConnection)?.disconnect()
+            audioInDec?.close()
+            audioIn?.close()
+            if (sdl != null) { if (sdl!!.isOpen) { sdl!!.stop() ; sdl!!.close() } }
+            sdl?.close()
         }
         init {
             logger.debug("plaything initialized!")
