@@ -105,7 +105,7 @@ class ModelPlaylist(private val app: WApplication, parent: WObject) : WAbstractT
     }
 
     override fun dropEvent(e: WDropEvent?, action: DropAction?, row: Int, column: Int, parent: WModelIndex?) {
-        println("drop: $action $row $column")
+        logger.debug("drop: $action $row $column")
         super.dropEvent(e, action, row, column, parent)
     }
 }
@@ -277,7 +277,7 @@ class CPlaylist(app: JwtApplication) : WContainerWidget() {
                     WMessageBox.show("Info", "<p>You need to assign a playlist folder first!</p>", EnumSet.of(StandardButton.Ok))
                 } else {
                     MusicPlayer.savePlaylist(plname.text)
-                    println("saved playlist") // make floating thing.
+                    logger.info("saved playlist") // make floating thing.
                 }
             })
             addit(KWPushButton("✖✖", "Clear playlist") {
@@ -345,7 +345,6 @@ class CFiles(private val app: JwtApplication) : WContainerWidget() {
             watcher?.close() // stops the take() in thread
             watchThread = thread(start = true) {
                 val path = dir.toPath()
-                // println("watcher (${dir.name} ${Thread.currentThread().id}): started")
                 watcher = path.watch()
                 try {
                     // don't loop because callback will start another thread before tak() started again... while (true) {
@@ -355,9 +354,7 @@ class CFiles(private val app: JwtApplication) : WContainerWidget() {
                         callback()
                     }
                 } catch (e: ClosedWatchServiceException) {
-                    // println("watcher (${dir.name} ${Thread.currentThread().id}): ClosedWatchServiceException!")
                 }
-                // println("watcher (${dir.name} ${Thread.currentThread().id}): ended")
             }
         }
     }
@@ -453,7 +450,7 @@ class CFiles(private val app: JwtApplication) : WContainerWidget() {
                 SettingsWindow().show()
             })
             addit(KWPushButton("?", "Help") {
-                println("help")
+                logger.debug("help")
             })
         })
         lfiles.addWidget(tvfiles, 1)
@@ -505,9 +502,9 @@ class JwtApplication(env: WEnvironment) : WApplication(env) {
         // init stuff after shown
         val app = this
         Timer().schedule(timerTask { // ugly hack, but I can't find another way.
-            println("resetting modelplaylist... ${Thread.currentThread().id}")
+            logger.debug("resetting modelplaylist... ${Thread.currentThread().id}")
             doUI(app) { cplaylist.scrollToCurrent() }
-            println("resetting modelplaylist done! ${Thread.currentThread().id}")
+            logger.debug("resetting modelplaylist done! ${Thread.currentThread().id}")
         }, 1000)
     }
 }

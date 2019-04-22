@@ -10,6 +10,8 @@ import mu.KotlinLogging
 
 import org.jflac.FLACDecoder
 import org.jflac.metadata.Metadata
+import java.net.HttpURLConnection
+import java.net.URLConnection
 import java.util.concurrent.CompletableFuture
 
 /*
@@ -72,8 +74,7 @@ object MusicPlayerBackend {
         val tit = File(uri).name
         var le = -1
         try {
-//            println("XXXXX1 audio file readers[${Thread.currentThread().id}]: " + com.sun.media.sound.JDK13Services.getProviders(AudioFileReader::class.java).joinToString { x -> x.toString() })
-//
+            // logger.info("XXXXX1 audio file readers[${Thread.currentThread().id}]: " + com.sun.media.sound.JDK13Services.getProviders(AudioFileReader::class.java).joinToString { x -> x.toString() })
             if (url.file.endsWith(".flac")) {
                 val fis = FileInputStream(url.file)
                 val decoder = FLACDecoder(fis)
@@ -135,7 +136,7 @@ object MusicPlayerBackend {
             playThing.action.set(Actions.ASTOP.i)
             playThing.isPaused.set(false)
         }
-        playThing = PlayThing()
+        //playThing = PlayThing()
         return playThing.play2(songurl, timelen)
     }
 
@@ -150,6 +151,9 @@ object MusicPlayerBackend {
         private var decodedFormat: AudioFormat? = null
         private var fut: CompletableFuture<Unit>? = null
         private var volume: FloatControl? = null
+        private var conn: URLConnection? = null
+        private var bInputStream: IcyBufferedInputStream? = null
+
         var isStream = false
 
         fun setVolume(vol: Double) {
@@ -168,36 +172,36 @@ object MusicPlayerBackend {
             }
         }
 
-        private fun cleanUp() {
-            logger.debug("cleanup...")
-            if (fut?.isDone == false) {
-                logger.error("future is not completed!")
-                throw IllegalStateException("future is not completed!")
-            }
-            if (audioInDec != null) audioInDec!!.close()
-            if (audioIn != null) audioIn!!.close()
-            if (sdl != null) { if (sdl!!.isOpen) { sdl!!.stop() ; sdl!!.close() } }
-        }
+        fun safeString(s: String) = s.map { if (it.toInt() in 32..175) it else '?' }.joinToString("")
 
-        class IcyBufferedInputStream(inps: InputStream, private var metainterval: Int) : BufferedInputStream(inps) {
+        inner class IcyBufferedInputStream(inps: InputStream, private var metainterval: Int) : BufferedInputStream(inps) {
             var readBytesUntilMeta = 0
 
             override fun read(): Int = 0 // not needed
             override fun read(b: ByteArray?) = 0 // not needed
 
+            private fun readOrThrow(b: ByteArray?, off: Int, len: Int) {
+                var tmpread = 0
+                while (tmpread < len) {
+                    val t2 = super.read(b, off, len-tmpread)
+                    if (t2 == -1) throw Exception("readOrThrow: got -1!")
+                    tmpread += t2
+                }
+            }
             // read icy-metaint chunks according to http://www.smackfu.com/stuff/programming/shoutcast.html etc
             override fun read(b: ByteArray?, off: Int, len: Int): Int {
                 assert(off != 0) // not implemented, don't need
                 return if (metainterval > 0 && readBytesUntilMeta +len > metainterval) {
                     val len2 = metainterval- readBytesUntilMeta // read until next metadata or len
-                    val tmpread = super.read(b, off, len2)
+                    readOrThrow(b, off, len2)
                     val metaN = super.read() // metadata length = metaN*16 bytes
+                    if (metaN < 0) throw Exception ("ERROR reading metadata length byte!!!")
                     if (metaN > 0) {
                         val metabb = ByteArray(metaN*16)
-                        super.read(metabb, 0, metaN*16)
+                        readOrThrow(metabb, 0, metaN*16)
                         val md = metabb.toString(Charsets.UTF_8).trim(0.toChar())
-                        logger.debug("received metadata: $md")
-                        // TODO testing: check if garbage. 32-175 is chars.
+                        logger.debug("received metadata [$readBytesUntilMeta $metainterval $off $len $len2 $metaN]")
+                        logger.debug("received metadata: ${safeString(md)}")
                         val saneFraction = md.map { if (it.toInt() in 32..175) 1 else 0 }.sum() / md.length
                         if (saneFraction > 0.5) {
                             var st = ""
@@ -211,13 +215,11 @@ object MusicPlayerBackend {
                             }
                             if (st + surl != "") onSongMetaChanged(st, surl)
                         } else {
-                            logger.warn("icystream: metadata binary, stopping to read it!!!")
-                            onSongMetaChanged("read metadata failed!", "failed!")
-                            metainterval = 0
+                            throw Exception("icystream: metadata binary, something got messed up!")
                         }
                     }
                     readBytesUntilMeta = 0
-                    tmpread
+                    len2
                 } else {
                     val tmpread = super.read(b, off, len)
                     readBytesUntilMeta += tmpread
@@ -228,8 +230,12 @@ object MusicPlayerBackend {
 
         fun play2(songurl: String, timelen: Double): (/*currentfile*/String) {
 //            setContextClassLoader()
+            if (fut?.isDone == false) {
+                logger.error("future is not completed!")
+                throw IllegalStateException("future is not completed!")
+            }
+
             action.set(Actions.ANOTHING.i)
-            cleanUp()
             isPlaying.set(true)
             emitPlayingStateChanged()
 
@@ -292,23 +298,21 @@ object MusicPlayerBackend {
 //                    audioIn = AudioSystem.getAudioInputStream(bInputStream)
 
                     // own icy metadata reader, WORKS for icecast & shoutcast!
-                    val conn = url.openConnection()
-                    conn.setRequestProperty("Accept", "*/*")
-                    conn.setRequestProperty("Icy-Metadata", "1") // request it
-                    conn.setRequestProperty("Connection", "close")
-                    logger.debug("contentlength: ${conn.contentLength}")
-                    val metaint = conn.getHeaderFieldInt("icy-metaint", -1)
+                    conn = url.openConnection()
+                    conn!!.setRequestProperty("Accept", "*/*")
+                    conn!!.setRequestProperty("Icy-Metadata", "1") // request it
+                    conn!!.setRequestProperty("Connection", "close")
+                    logger.debug("contentlength: ${conn!!.contentLength}")
+                    val metaint = conn!!.getHeaderFieldInt("icy-metaint", -1)
                     logger.debug("ice: is icecast 2 stream metaint=$metaint")
                     // get stream name
-                    val headers = conn.headerFields.mapValues { e -> e.value.first() }
+                    val headers = conn!!.headerFields.mapValues { e -> e.value.first() }
                     headers.forEach { (t, u) -> logger.debug("header: $t = $u") }
                     val streamname = headers.getOrDefault("icy-name", url.toString())
                     currentFile = streamname
-                    val bInputStream = IcyBufferedInputStream(conn.getInputStream(), metaint)
+                    bInputStream = IcyBufferedInputStream(conn!!.getInputStream(), metaint)
                     audioIn = AudioSystem.getAudioInputStream(bInputStream)
-                    // here i must reset the read counter so that after icy-metaint bytes the metadata comes!!!!!!!!!!!!!!!!!!!!!!!!!!
-                    bInputStream.readBytesUntilMeta = 0
-
+                    bInputStream!!.readBytesUntilMeta = 0 // here i must reset the read counter so that after icy-metaint bytes the metadata comes!!!
                     isStream = true
                 } else if (url.protocol == "file") {
                     isStream = false
@@ -437,7 +441,14 @@ object MusicPlayerBackend {
                 emitPlayingStateChanged()
                 if (action.get() != Actions.ASTOP.i) CompletableFuture.runAsync { onCompleted() }
             }.handle { _, u ->
-                logger.debug("fut onFailure: error = $u", u)
+                logger.debug("fut handle: error = $u", u)
+                bInputStream?.close()
+                (conn as? HttpURLConnection)?.disconnect()
+                audioInDec?.close()
+                audioIn?.close()
+                if (sdl != null) { if (sdl!!.isOpen) { sdl!!.stop() ; sdl!!.close() } }
+                sdl?.close()
+                logger.debug("fut handle: done")
             }
 
             logger.debug("playatpos/")

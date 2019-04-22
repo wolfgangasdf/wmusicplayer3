@@ -149,6 +149,26 @@ object TestStream {
     }
 }
 
+@Suppress("unused")
+object TestStreamSkipping {
+    fun main() {
+//        val url = "http://ice.somafm.com/groovesalad"
+//        val url = "http://ice1.somafm.com/deepspaceone-128-mp3"
+        val url = "http://listen.radionomy.com/ABC-Lounge" // from shoutcast.com
+        println("play res = " + MusicPlayerBackend.play(url, -1.0))
+        Thread.sleep(2000)
+        println("playing: ${MusicPlayerBackend.dogetPlaying()}")
+        println("stopping...")
+        MusicPlayerBackend.stop()
+        Thread.sleep(2000)
+        println("stopped, playing again...")
+        println("play res = " + MusicPlayerBackend.play(url, -1.0))
+        while (MusicPlayerBackend.dogetPlaying()) {
+            println("playing...")
+            Thread.sleep(1000)
+        }
+    }
+}
 
 fun main() {
     System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "DEBUG")
@@ -162,7 +182,8 @@ fun main() {
     }
 
     testot()
-    TestStream.main()
+//    TestStream.main()
+    TestStreamSkipping.main()
 //    TestBackend.main(args)
 //    TestFlac.main(args)
 }
