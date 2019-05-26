@@ -36,7 +36,7 @@ fun kJwtVBox(parent: WContainerWidget, body: KJwtVBox.() -> Unit): KJwtVBox {
     return hb
 }
 
-fun <T>kJwtGeneric(factory: () -> T, body: T.() -> Unit): T {
+fun <T>kJwtGeneric(factory: () -> T, body: T.() -> Unit = {}): T {
     val hb = factory()
     body(hb)
     return hb

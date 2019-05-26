@@ -79,6 +79,36 @@ class AddURLWindow : WDialog("Add stream URL...") {
     }
 }
 
+class EditPLSentry(index: Int?) : WDialog("Edit playlist entry...") {
+    private val lplayer = WVBoxLayout(this.contents)
+    private val leURI = kJwtGeneric({ WLineEdit() })
+    private val leTitle = kJwtGeneric({ WLineEdit() })
+    init {
+        if (index != null) {
+            val pli = MusicPlayer.cPlaylist[index]
+            leURI.text = pli.name
+            leTitle.text = pli.title
+            footer.addWidget(KWPushButton("Update", "") {
+                pli.name = leURI.text
+                pli.title = leTitle.text
+                MusicPlayer.cPlaylist[index] = pli
+                accept()
+            })
+        }
+        width = WLength(350.0)
+        isModal = true
+        footer.addWidget(KWPushButton("Add entry", "") {
+            MusicPlayer.addToPlaylist(leURI.text, title = leTitle.text)
+            accept()
+        })
+        footer.addWidget(KWPushButton("Cancel", "") { reject() })
+        lplayer.addWidget(WLabel("URI (file:///... or http://....):"))
+        lplayer.addWidget(leURI, 1)
+        lplayer.addWidget(WLabel("Title:"))
+        lplayer.addWidget(leTitle, 1)
+    }
+}
+
 
 class ModelPlaylist(private val app: WApplication, parent: WObject) : WAbstractTableModel(parent) {
 
@@ -307,8 +337,9 @@ class CPlaylist(app: JwtApplication) : WContainerWidget() {
             addit(KWPushButton("✖", "Remove selected songs from playlist") {
                 tvplaylist.selectedIndexes.map { mi -> mi.row }.reversed().forEach { i ->  MusicPlayer.cPlaylist.removeAt(i) }
             })
-            addit(KWPushButton("+url", "Add stream...") {
-                AddURLWindow().show()
+            addit(KWPushButton("edit", "Edit selected entry or add new...") {
+                val i = tvplaylist.selectedIndexes.firstOrNull()?.row
+                EditPLSentry(i).show()
             })
         })
         lplaylist.addWidget(tvplaylist, 1)
