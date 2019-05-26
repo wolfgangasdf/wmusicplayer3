@@ -4,7 +4,7 @@ WMusicPlayer is a web-based (JWT/Java Webtoolkit + Kotlin) music player that
 
 * is directory (folder) based, you don't need to have proper ID3 tags or so.
 * uses simple pls-playlists which can be created and modified using the web interface.
-* plays mp3, flac, ogg, wav
+* plays everything that VLC plays (mp3, flac, ogg, wav, aac, ...)
 
 It
 
@@ -15,6 +15,7 @@ It
 
 # How to use
 
+* Install VLC into the default location.
 * Get the [Java JRE](http://www.oracle.com/technetwork/java/javase/downloads/index.html) >= 8u101. Don't forget to untick the [crapware](https://www.google.com/search?q=java+crapware) installer, and/or [disable it permanently](https://www.java.com/en/download/faq/disable_offers.xml)!
 The "JRE server" is also fine. OpenJDK is not tested.
 * download the [jar](https://github.com/wolfgangasdf/wmusicplayer/releases) or `wget https://github.com/wolfgangasdf/wmusicplayer/releases/download/SNAPSHOT/wmusicplayer.jar`
@@ -43,13 +44,8 @@ Package it:
 
 # Used frameworks #
 
-* [JWT](https://www.webtoolkit.eu/jwt)
 * [Kotlin](https://kotlinlang.org)
-* via [com.googlecode.soundlibs](https://code.google.com/p/soundlibs/):
-    * [Tritonus](http://tritonus.org/)
-    * [mp3spi](http://www.javazoom.net/mp3spi/mp3spi.html)
-    * [jorbis](http://www.jcraft.com/jorbis/)
-    * [vorbisspi](http://www.javazoom.net/vorbisspi/vorbisspi.html)
-* [jflac](https://github.com/nguillaumin/jflac)
-
+* [JWT](https://www.webtoolkit.eu/jwt)
+* [vlcj](https://github.com/caprica/vlcj/)
+* [AzaKotlinCSS](https://github.com/olegcherr/Aza-Kotlin-CSS)
 

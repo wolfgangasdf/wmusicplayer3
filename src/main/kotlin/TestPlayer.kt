@@ -80,7 +80,7 @@ object TestBackend {
 
     fun main() {
         MusicPlayerBackend.onCompleted = { println("onFinished1") }
-        print("play res = " + MusicPlayerBackend.play("file:///Unencrypted_Data/Music/111.wav", -1.0))
+        print("play res = " + MusicPlayerBackend.play("file:///Unencrypted_Data/Music/111.wav"))
 
         Thread.sleep(500)
         MusicPlayerBackend.stop() // should stop, and NOT call onCompleted
@@ -88,9 +88,9 @@ object TestBackend {
 
         println("test play other song")
         MusicPlayerBackend.onCompleted = { println("onFinished2") }
-        print("play res = " + MusicPlayerBackend.play("file:///Unencrypted_Data/Music/111.wav", -1.0))
+        print("play res = " + MusicPlayerBackend.play("file:///Unencrypted_Data/Music/111.wav"))
         Thread.sleep(500)
-        print("play res = " + MusicPlayerBackend.play("file:///Unencrypted_Data/Music/222.wav", -1.0))
+        print("play res = " + MusicPlayerBackend.play("file:///Unencrypted_Data/Music/222.wav"))
         waitForPlayer()
 
         println("test gapless")
@@ -100,15 +100,15 @@ object TestBackend {
             println("onFinished3")
             if (songi <= songs.size - 2) {
                 songi += 1
-                print("play res = " + MusicPlayerBackend.play("file:///Unencrypted_Data/Music/" + songs[songi], -1.0))
+                print("play res = " + MusicPlayerBackend.play("file:///Unencrypted_Data/Music/" + songs[songi]))
             }
         }
-        print("play res = " + MusicPlayerBackend.play("file:///Unencrypted_Data/Music/" + songs[songi], -1.0))
+        print("play res = " + MusicPlayerBackend.play("file:///Unencrypted_Data/Music/" + songs[songi]))
         waitForPlayer()
 
         println("test skipping")
         MusicPlayerBackend.onCompleted = {} // have to clear it...
-        MusicPlayerBackend.play("file:///Unencrypted_Data/Music/10-thievery_corporation-safar_(the_journey)_(feat._lou_lou).flac", -1.0)
+        MusicPlayerBackend.play("file:///Unencrypted_Data/Music/10-thievery_corporation-safar_(the_journey)_(feat._lou_lou).flac")
         Thread.sleep(1500)
         MusicPlayerBackend.skipRel(10.0)
         Thread.sleep(2000)
@@ -121,14 +121,14 @@ object TestBackend {
 
         println("test volume")
 //    MusicPlayerBackend.play("file:///Unencrypted_Data/Music/10-thievery_corporation-safar_(the_journey)_(feat._lou_lou).flac", -1)
-        MusicPlayerBackend.play("file:///Unencrypted_Data/Music/04Daft Punk - Within.mp3", -1.0)
+        MusicPlayerBackend.play("file:///Unencrypted_Data/Music/04Daft Punk - Within.mp3")
         MusicPlayerBackend.skipRel(10.0)
         Thread.sleep(1500)
-        MusicPlayerBackend.setVolume(0.5)
+        MusicPlayerBackend.setVolume(50)
         Thread.sleep(2500)
-        MusicPlayerBackend.setVolume(1.0)
+        MusicPlayerBackend.setVolume(100)
         Thread.sleep(1500)
-        MusicPlayerBackend.setVolume(0.5)
+        MusicPlayerBackend.setVolume(50)
         Thread.sleep(1500)
 
     }
@@ -141,7 +141,7 @@ object TestStream {
 //        val url = "http://ice.somafm.com/groovesalad"
 //        val url = "http://ice1.somafm.com/deepspaceone-128-mp3"
     val url = "http://listen.radionomy.com/ABC-Lounge" // from shoutcast.com
-        print("play res = " + MusicPlayerBackend.play(url, -1.0))
+        print("play res = " + MusicPlayerBackend.play(url))
         while (MusicPlayerBackend.dogetPlaying()) {
             println("playing...")
             Thread.sleep(1000)
@@ -155,14 +155,14 @@ object TestStreamSkipping {
 //        val url = "http://ice.somafm.com/groovesalad"
 //        val url = "http://ice1.somafm.com/deepspaceone-128-mp3"
         val url = "http://listen.radionomy.com/ABC-Lounge" // from shoutcast.com
-        println("play res = " + MusicPlayerBackend.play(url, -1.0))
+        println("play res = " + MusicPlayerBackend.play(url))
         Thread.sleep(2000)
         println("playing: ${MusicPlayerBackend.dogetPlaying()}")
         println("stopping...")
         MusicPlayerBackend.stop()
         Thread.sleep(2000)
         println("stopped, playing again...")
-        println("play res = " + MusicPlayerBackend.play(url, -1.0))
+        println("play res = " + MusicPlayerBackend.play(url))
         while (MusicPlayerBackend.dogetPlaying()) {
             println("playing...")
             Thread.sleep(1000)

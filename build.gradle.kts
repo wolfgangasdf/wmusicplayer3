@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
-val kotlinversion = "1.3.21"
+val kotlinversion = "1.3.31"
 
 buildscript {
     repositories {
@@ -14,7 +14,7 @@ group = "com.wolle"
 version = ""
 
 plugins {
-    kotlin("jvm") version "1.3.21"
+    kotlin("jvm") version "1.3.31"
     id("idea")
     id("application")
     id("com.github.ben-manes.versions") version "0.21.0"
@@ -23,7 +23,7 @@ plugins {
 }
 
 tasks.withType<Wrapper> {
-    gradleVersion = "5.2.1"
+    gradleVersion = "5.4.1"
 }
 
 application {
@@ -59,10 +59,10 @@ repositories {
 dependencies {
     compile("org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinversion")
     compile("org.jetbrains.kotlin:kotlin-reflect:$kotlinversion")
-    compile("io.github.microutils:kotlin-logging:1.6.25")
+    compile("io.github.microutils:kotlin-logging:1.6.26")
     compile("org.slf4j:slf4j-simple:1.8.0-beta4") // no colors, everything stderr
-    compile("org.eclipse.jetty:jetty-server:9.4.15.v20190215")
-    compile("org.eclipse.jetty:jetty-servlet:9.4.15.v20190215")
+    compile("org.eclipse.jetty:jetty-server:9.4.18.v20190429")
+    compile("org.eclipse.jetty:jetty-servlet:9.4.18.v20190429")
 
     // jwt
     compile("eu.webtoolkit:jwt:3.3.12")
@@ -76,13 +76,7 @@ dependencies {
     compile ("azadev.kotlin:aza-kotlin-css:1.0")
 
     // sound
-    compile("com.googlecode.soundlibs:mp3spi:1.9.5.4")
-    compile("com.googlecode.soundlibs:vorbisspi:1.0.3.3")
-    compile("com.googlecode.soundlibs:jlayer:1.0.1.4")
-    compile("com.googlecode.soundlibs:basicplayer:3.0.0.0")
-    compile("org.jflac:jflac-codec:1.5.2")
-    //compile("net.sourceforge.jaadec:jaad:0.8.5") // local doesn't work yet
-    // "com.googlecode.soundlibs" % "tritonus-share" % "0.3.7.4"
+    compile("uk.co.caprica:vlcj:4.1.0") // 4.1.0
 }
 
 tasks.withType<KotlinCompile> {

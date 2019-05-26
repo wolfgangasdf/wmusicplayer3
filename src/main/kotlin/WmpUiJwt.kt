@@ -43,6 +43,7 @@ class SettingsWindow : WDialog("Settings") {
             Settings.mixer = sbmixer.currentText.toString()
             Settings.port = lePort.text.toString().toInt()
             Settings.save()
+            MusicPlayer.updateMixer()
             accept()
         })
         footer.addWidget(KWPushButton("Cancel", "") { reject() })
@@ -169,7 +170,7 @@ class CPlayer(app: JwtApplication) : WContainerWidget() {
             MusicPlayer.skipTo(i.toDouble())
         }
     })
-    private val volume = WText("00")
+    private val volume = WText("100")
     private val timecurr = WText("1:00")
     private val timelen = WText("1:05:23")
     private val songinfo1 = WText("songi1")

@@ -22,9 +22,11 @@ object Constants {
     const val tagFile = "file://"
     const val tagStream = "http://"
 
-    val soundFileUri = """(file.*\.(flac|mp3|wav|ogg))|(http.*)""".toRegex()
-    val soundFilePls = """([^.].*\.(flac|mp3|wav|ogg|pls))""".toRegex()
-    val soundFile = """([^.].*\.(flac|mp3|wav|ogg))""".toRegex()
+    // https://www.openwith.org/programs/vlc-media-player
+    private const val audiofileexts = "flac|mp3|wav|ogg|m3u|a52|aac|oma|spx|m4a|mp1|mp2|xm|ac3|mod|wma|mka|m4p"
+    val soundFileUri = """(file.*\.($audiofileexts))|(http.*)""".toRegex()
+    val soundFilePls = """([^.].*\.($audiofileexts|pls))""".toRegex()
+    val soundFile = """([^.].*\.($audiofileexts))""".toRegex()
 }
 
 class PlaylistItem(var name: String, var title: String, var length: Int)
@@ -196,7 +198,7 @@ object MusicPlayer {
     }
 
     fun updateVolume() { // 0..100
-        MusicPlayerBackend.setVolume(pVolume.value/100.0)
+        MusicPlayerBackend.setVolume(pVolume.value)
         Settings.save()
     }
 
@@ -215,6 +217,10 @@ object MusicPlayer {
     }
 
     fun getMixers() = MusicPlayerBackend.dogetMixers()
+    fun updateMixer() {
+        logger.info("updateMixer: using <${Settings.mixer}>")
+        MusicPlayerBackend.setMixer(Settings.mixer)
+    }
 
     fun playNext() {
         val ci = pCurrentPlaylistIdx.value
@@ -251,6 +257,28 @@ object MusicPlayer {
 
         if (pCurrentPlaylistIdx.value == -1 && cPlaylist.size > 0) pCurrentPlaylistIdx.value = 0
 
+        if (pCurrentPlaylistIdx.value == null) dosetCurrentPlaylistIdx(0)
+        logger.debug("playsong $pCurrentPlaylistIdx")
+        if (pCurrentPlaylistIdx.value == null) {
+            return
+        }
+
+        currentPlaylistItem = getCurrentPlaylistItem()
+        val currfile = if (currentPlaylistItem == null) "" else currentPlaylistItem!!.name
+        MusicPlayerBackend.play(currentPlaylistItem!!.name)
+        updateVolume()
+        pCurrentFile.value = currfile // TODO was return val from play()
+    }
+
+    fun updateCurrentPlaylistItem() {
+        pCurrentPlaylistIdx.value = cPlaylist.indexOf(currentPlaylistItem)
+    }
+
+    init {
+        // init musicPlayer, called once the server is started!
+        logger.info("Init MusicPlayer...")
+
+        // permanent callbacks
         MusicPlayerBackend.onPlayingStateChanged = { _, _ ->
             pIsPlaying.set(dogetPlaying())
         }
@@ -260,8 +288,9 @@ object MusicPlayer {
             pTimeLen.value = len
         }
 
-        MusicPlayerBackend.onSongMetaChanged = { streamtitle, _ ->
+        MusicPlayerBackend.onSongMetaChanged = { streamtitle, nowplaying ->
             pCurrentFile.value = streamtitle
+            pCurrentSong.value = nowplaying
         }
 
         MusicPlayerBackend.onCompleted = {
@@ -269,26 +298,9 @@ object MusicPlayer {
             playNext()
         }
 
-        if (pCurrentPlaylistIdx.value == null) dosetCurrentPlaylistIdx(0)
-        logger.debug("playsong $pCurrentPlaylistIdx")
-        if (pCurrentPlaylistIdx.value == null) {
-            return
-        }
-
-        currentPlaylistItem = getCurrentPlaylistItem()
-        val currfile = if (currentPlaylistItem == null) "" else
-            MusicPlayerBackend.play(currentPlaylistItem!!.name, currentPlaylistItem!!.length.toDouble())
-        updateVolume()
-        pCurrentFile.value = currfile
-    }
-
-    fun updateCurrentPlaylistItem() {
-        pCurrentPlaylistIdx.value = cPlaylist.indexOf(currentPlaylistItem)
-    }
-
-    init {
-        // init musicPlayer, called once the server is started!
-        logger.info("Init musicPlayer...")
+        // load playlist
+        MusicPlayerBackend.dogetMixers()
         loadPlaylist(Settings.playlistDefault)
+        updateMixer()
     }
 }
