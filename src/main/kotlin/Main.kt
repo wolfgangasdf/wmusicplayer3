@@ -6,7 +6,6 @@ import org.eclipse.jetty.servlet.ServletContextHandler
 import org.eclipse.jetty.servlet.ServletHolder
 import org.eclipse.jetty.util.resource.Resource
 import javax.sound.sampled.spi.AudioFileReader
-import java.net.URLClassLoader
 
 
 fun main() {
@@ -23,10 +22,7 @@ fun main() {
 
     logger.info("audio file readers [${Thread.currentThread().id}]: " + com.sun.media.sound.JDK13Services.getProviders(AudioFileReader::class.java).joinToString { x -> x.toString() })
 
-    for (url in (ClassLoader.getSystemClassLoader() as URLClassLoader).urLs) {
-        logger.debug("classpath: " + url.file)
-    }
-
+//    for (url in (ClassLoader.getSystemClassLoader() as URLClassLoader).urLs) logger.debug("classpath: " + url.file)
 
     MusicPlayer
 //    MusicPlayer.loader = Thread.currentThread().contextClassLoader

@@ -41,6 +41,7 @@ object MusicPlayer {
     // public observables, multiple subscribers possible!
     val pCurrentFile = SimpleStringProperty("1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 ")
     val pCurrentSong = SimpleStringProperty("1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 ")
+    val pCodecInfo = SimpleStringProperty("1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 ")
     val pTimePos = SimpleDoubleProperty(0.0)
     val pTimeLen = SimpleDoubleProperty(0.0)
     val pVolume = SimpleIntegerProperty(50)
@@ -90,11 +91,11 @@ object MusicPlayer {
         return (MusicPlayerBackend.dogetPlaying() && !MusicPlayerBackend.dogetPause())
     }
 
-    fun addToPlaylist(uri: String, beforeId: PlaylistItem? = null, title: String? = null, length: String? = null) {
+    fun addToPlaylist(uri: String, beforeId: PlaylistItem? = null, clearPlayListIfPls: Boolean, title: String? = null, length: String? = null) {
 //        setContextClassLoader()
         if (uri.endsWith(".pls")) {
             val f2 = uri.replace("file://","")
-            loadPlaylist(f2)
+            loadPlaylist(f2, clearPlayListIfPls)
         } else if (soundFileUri.matches(uri)) {
             val url = URL(uri)
             var tit = title
@@ -119,10 +120,10 @@ object MusicPlayer {
         }
     }
 
-    fun loadPlaylist(file: String) {
+    fun loadPlaylist(file: String, clearPlayList: Boolean) {
         val f = File(file)
         if (f.exists()) {
-            cPlaylist.clear()
+            if (clearPlayList) cPlaylist.clear()
             val inp = BufferedReader(FileReader(f))
             val numberTag = """numberofentries=(.*)""".toRegex(RegexOption.IGNORE_CASE)
             val fileTag = """file([0-9]+)=(.*)""".toRegex(RegexOption.IGNORE_CASE)
@@ -158,7 +159,7 @@ object MusicPlayer {
                 }
             }
             for (iii in 1..nume) {
-                addToPlaylist(files[iii]!!, null, titles[iii], lengths[iii])
+                addToPlaylist(files[iii]!!, null, false, titles[iii], lengths[iii])
             }
             inp.close()
             setPlaylistVars(f)
@@ -274,6 +275,10 @@ object MusicPlayer {
         pCurrentPlaylistIdx.value = cPlaylist.indexOf(currentPlaylistItem)
     }
 
+    fun dogetMediaInfo() {
+        MusicPlayerBackend.dogetMediaInfo()
+    }
+
     init {
         // init musicPlayer, called once the server is started!
         logger.info("Init MusicPlayer...")
@@ -281,6 +286,7 @@ object MusicPlayer {
         // permanent callbacks
         MusicPlayerBackend.onPlayingStateChanged = { _, _ ->
             pIsPlaying.set(dogetPlaying())
+            if (dogetPlaying()) pCodecInfo.set(MusicPlayerBackend.dogetMediaInfo())
         }
 
         MusicPlayerBackend.onProgress = { time, len ->
@@ -300,7 +306,7 @@ object MusicPlayer {
 
         // load playlist
         MusicPlayerBackend.dogetMixers()
-        loadPlaylist(Settings.playlistDefault)
+        loadPlaylist(Settings.playlistDefault, true)
         updateMixer()
     }
 }

@@ -55,12 +55,14 @@ object MusicPlayerBackend {
 
             override fun timeChanged(mediaPlayer: MediaPlayer?, newTime: Long) {
                 //println("mpc time $newTime")
-                val newmd = getMetadata(mp.media().meta().asMetaData())
-                if (vmetadata != newmd) {
-                    println("   metadata changed!!")
-                    vmetadata.clear()
-                    vmetadata.putAll(newmd)
-                    onSongMetaChanged(vmetadata.getOrDefault("TITLE", "<title>"), vmetadata.getOrDefault("NOW_PLAYING", "<now_playing>"))
+                if (isStream) {
+                    val newmd = getMetadata(mp.media().meta().asMetaData())
+                    if (vmetadata != newmd) {
+                        println("   metadata changed!! $newmd")
+                        vmetadata.clear()
+                        vmetadata.putAll(newmd)
+                        onSongMetaChanged(vmetadata.getOrDefault("TITLE", "<title>"), vmetadata.getOrDefault("NOW_PLAYING", "<now_playing>"))
+                    }
                 }
                 onProgress((newTime/1000).toDouble(), mp.media().info().duration()/1000.0)
             }
@@ -163,7 +165,10 @@ object MusicPlayerBackend {
         logger.debug("set vol $vol")
         mp.submit { mp.audio().setVolume(vol) }
     }
-//    fun dogetVolume() = playThing.volume!!.value
+    fun dogetMediaInfo(): String? {
+        logger.debug("media info: " + mp.media()?.info()?.audioTracks()?.firstOrNull())
+        return mp.media()?.info()?.audioTracks()?.firstOrNull()?.let { "${it.codecName()}/${it.codecDescription()},${it.channels()}/${it.rate()}" }
+    }
 
     init {
         iniCallbacks()

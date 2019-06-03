@@ -133,7 +133,7 @@ class KotlinxHtmlServlet : HttpServlet() {
             }
             val quickpls = req.parameterNames.toList().find { pn -> pn.startsWith("pls-") }
             if (quickpls != null) {
-                MusicPlayer.loadPlaylist(Settings.bQuickPls[quickpls.replace("pls-", "").toInt()])
+                MusicPlayer.loadPlaylist(Settings.bQuickPls[quickpls.replace("pls-", "").toInt()], true)
                 MusicPlayer.playFirst()
             }
 //            resp!!.sendRedirect("/mobile?asdf") // reload doesn't work

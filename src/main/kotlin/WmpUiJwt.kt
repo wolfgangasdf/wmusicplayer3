@@ -69,7 +69,7 @@ class AddURLWindow : WDialog("Add stream URL...") {
         isModal = true
         footer.addWidget(KWPushButton("OK", "Add URL to playlist") {
             if (leUrl.text.startsWith("http")) {
-                MusicPlayer.addToPlaylist(leUrl.text)
+                MusicPlayer.addToPlaylist(leUrl.text, null, false)
             }
             accept()
         })
@@ -98,7 +98,7 @@ class EditPLSentry(index: Int?) : WDialog("Edit playlist entry...") {
         width = WLength(350.0)
         isModal = true
         footer.addWidget(KWPushButton("Add entry", "") {
-            MusicPlayer.addToPlaylist(leURI.text, title = leTitle.text)
+            MusicPlayer.addToPlaylist(leURI.text, title = leTitle.text, clearPlayListIfPls = false)
             accept()
         })
         footer.addWidget(KWPushButton("Cancel", "") { reject() })
@@ -205,9 +205,10 @@ class CPlayer(app: JwtApplication) : WContainerWidget() {
     private val timelen = WText("1:05:23")
     private val songinfo1 = WText("songi1")
     private val songinfo2 = WText("songi2")
+    private val codecInfo = WText("codecinfo")
     private val quickbtns = Array(Constants.NQUICKPLS) { i -> KWPushButton(Settings.getplscap(i), "Load Playlist $i") {
         if (bquickedit.text.value == "✏️") {
-            MusicPlayer.loadPlaylist(Settings.bQuickPls[i])
+            MusicPlayer.loadPlaylist(Settings.bQuickPls[i], true)
             MusicPlayer.playFirst()
         } else {
             Settings.bQuickPls[i] = MusicPlayer.pPlaylistFile.value
@@ -224,7 +225,12 @@ class CPlayer(app: JwtApplication) : WContainerWidget() {
     init {
         width = WLength(500.0)
         btplay.width = WLength(30.0)
+        songinfo1.height = WLength(32.0)
+        songinfo1.decorationStyle.font.weight = WFont.Weight.Bold
         songinfo2.height = WLength(30.0)
+        codecInfo.height = WLength(10.0)
+//        codecInfo.styleClass = "codecinfo"
+        codecInfo.decorationStyle.font.size = WFont.Size.Smaller
         lplayer.addWidget(kJwtHBox(this){
             addit(KWPushButton("⇠", "Previous song") { MusicPlayer.playPrevious() })
             addit(btplay)
@@ -249,9 +255,11 @@ class CPlayer(app: JwtApplication) : WContainerWidget() {
             quickbtns.forEach { qb -> addit(qb) }
             addit(bquickedit)
         })
+        lplayer.addWidget(codecInfo)
 
-        bindprop2widget(app, MusicPlayer.pCurrentSong) { _, newv -> songinfo1.setText("<b>$newv</b>") }
+        bindprop2widget(app, MusicPlayer.pCurrentSong) { _, newv -> songinfo1.setText(newv) }
         bindprop2widget(app, MusicPlayer.pCurrentFile) { _, newv -> songinfo2.setText(newv) }
+        bindprop2widget(app, MusicPlayer.pCodecInfo) { _, newv -> codecInfo.setText(newv) }
         bindprop2widget(app, MusicPlayer.pTimePos) { _, newv ->
             timecurr.setText(getMinutes(newv.toInt()))
             slider.value = newv.toInt()
@@ -343,7 +351,6 @@ class CPlaylist(app: JwtApplication) : WContainerWidget() {
             })
         })
         lplaylist.addWidget(tvplaylist, 1)
-
         bindprop2widget(app, MusicPlayer.pPlaylistName) { _, newv -> plname.text = newv }
         bindprop2widget(app, MusicPlayer.pCurrentPlaylistIdx) { oldv, newv ->
             if (oldv != null) updateRow(oldv.toInt())
@@ -458,7 +465,7 @@ class CFiles(private val app: JwtApplication) : WContainerWidget() {
 
     private fun addFileToPlaylist(f: File) {
         if (!f.isDirectory) {
-            MusicPlayer.addToPlaylist("file://" + f.path)
+            MusicPlayer.addToPlaylist("file://" + f.path, null, clearPlayListIfPls = false)
         }
     }
 
@@ -543,7 +550,7 @@ class JwtApplication(env: WEnvironment) : WApplication(env) {
         }, 1)
         lmain.addWidget(kJwtHBox(root) {
             addit(KWPushButton("debug", "...") {
-                logger.debug("debug: ${env.hasAjax()}")
+                MusicPlayer.dogetMediaInfo()
                 //logger.debug("debug playlist=" + MusicPlayer.cPlaylist.joinToString { pli -> pli.name })
             }, 0)
             addit(tInfo, 1)
