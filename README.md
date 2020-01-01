@@ -16,10 +16,8 @@ It
 # How to use
 
 * Install VLC into the default location.
-* Get the [Java JRE](http://www.oracle.com/technetwork/java/javase/downloads/index.html) >= 8u101. Don't forget to untick the [crapware](https://www.google.com/search?q=java+crapware) installer, and/or [disable it permanently](https://www.java.com/en/download/faq/disable_offers.xml)!
-The "JRE server" is also fine. OpenJDK is not tested.
-* download the [jar](https://github.com/wolfgangasdf/wmusicplayer/releases) or `wget https://github.com/wolfgangasdf/wmusicplayer/releases/download/SNAPSHOT/wmusicplayer.jar`
-* Double click the jar or better run `java -Dorg.eclipse.jetty.server.Request.maxFormKeys=2000 -Djava.io.tmpdir=./tmp -jar wmusicplayer.jar`.
+* [Download a zip](https://github.com/wolfgangasdf/gmail-attachment-remover/releases), extract it somewhere and run
+`bin/wmusicplayer.bat` (Windows) or `bin/wmusicplayer` (Linux/Mac).
 * I run this in a [GNU screen](https://en.wikipedia.org/wiki/GNU_Screen) that is started automatically.
 
 You can access WMP using different methods:
@@ -32,14 +30,14 @@ You can access WMP using different methods:
 
 Contributions are of course very welcome!
 
-* Get Java JDK >= 8u101 and [gradle](https://gradle.org/install/)
-* check out the code (`git clone ...` or download a zip)
+* Get Java 13 from https://jdk.java.net
+* Clone the repository
 * install JWT into local maven repository: see https://github.com/emweb/jwt#maven
 * I use the free community version of [IntelliJ IDEA](https://www.jetbrains.com/idea/download/), just open the project to get started.
 
 Package it:
 
-* run `gradle dist`. The resulting jar is `build/libs/wmusicplayer.jar`
+* run `gradle dist`. The resulting files are in `build/crosspackage`
 
 
 # Used frameworks #
@@ -48,4 +46,5 @@ Package it:
 * [JWT](https://www.webtoolkit.eu/jwt)
 * [vlcj](https://github.com/caprica/vlcj/)
 * [AzaKotlinCSS](https://github.com/olegcherr/Aza-Kotlin-CSS)
+* [Runtime plugin](https://github.com/beryx/badass-runtime-plugin) to make runtimes with JRE
 

@@ -31,6 +31,7 @@ plugins {
 application {
     mainClassName = "MainKt"
     //defaultTasks = tasks.run
+    applicationDefaultJvmArgs = listOf("-Dorg.eclipse.jetty.server.Request.maxFormKeys=2000")
 }
 
 runtime {
