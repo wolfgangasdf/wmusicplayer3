@@ -20,7 +20,7 @@ fun main() {
     logger.debug("debug")
     logger.trace("trace")
 
-    logger.info("audio file readers [${Thread.currentThread().id}]: " + com.sun.media.sound.JDK13Services.getProviders(AudioFileReader::class.java).joinToString { x -> x.toString() })
+//    logger.info("audio file readers [${Thread.currentThread().id}]: " + com.sun.media.sound.JDK13Services.getProviders(AudioFileReader::class.java).joinToString { x -> x.toString() })
 
 //    for (url in (ClassLoader.getSystemClassLoader() as URLClassLoader).urLs) logger.debug("classpath: " + url.file)
 

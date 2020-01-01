@@ -189,7 +189,7 @@ class ModelFiles(parent: WObject) : WAbstractTableModel(parent) {
 
 }
 
-class CPlayer(app: JwtApplication) : WContainerWidget() {
+class CPlayer(app: JwtApplication, isMobile: Boolean) : WContainerWidget() {
     private val lplayer = WVBoxLayout(this)
     private val btplay = KWPushButton("►", "Toggle play/pause") { MusicPlayer.dotoggle() }
     private val slider = kJwtGeneric( { WSlider() }, {
@@ -223,8 +223,8 @@ class CPlayer(app: JwtApplication) : WContainerWidget() {
     }
 
     init {
-        width = WLength(500.0)
-        btplay.width = WLength(30.0)
+        // TODO if (!isMobile) width = WLength(500.0)
+        btplay.width = WLength("14%")
         songinfo1.height = WLength(32.0)
         songinfo1.decorationStyle.font.weight = WFont.Weight.Bold
         songinfo2.height = WLength(30.0)
@@ -273,7 +273,7 @@ class CPlayer(app: JwtApplication) : WContainerWidget() {
     }
 }
 
-class CPlaylist(app: JwtApplication) : WContainerWidget() {
+class CPlaylist(app: JwtApplication, isMobile: Boolean) : WContainerWidget() {
     private val lplaylist = WVBoxLayout(this)
     private var mplaylist: ModelPlaylist? = null
     private val plname = WLineEdit("plname")
@@ -521,9 +521,9 @@ class CFiles(private val app: JwtApplication) : WContainerWidget() {
 
 }
 
-class JwtApplication(env: WEnvironment) : WApplication(env) {
-    private val cplayer = CPlayer(this)
-    private val cplaylist = CPlaylist(this)
+class JwtApplication(env: WEnvironment, isMobile: Boolean) : WApplication(env) {
+    private val cplayer = CPlayer(this, isMobile)
+    private val cplaylist = CPlaylist(this, isMobile)
     private val cfiles = CFiles(this)
     private val tInfo = WText("info")
 
@@ -539,15 +539,26 @@ class JwtApplication(env: WEnvironment) : WApplication(env) {
 
         setCssTheme("polished")
 
+        useStyleSheet(WLink("style/styles.css"))
+
         // for WText
         styleSheet.addRule("body", "font-family: verdana, helvetica, tahoma, sans-serif; font-size: 13px;")
 
         val lmain = WVBoxLayout(root)
         lmain.addWidget(cplayer, 0, AlignmentFlag.AlignLeft)
-        lmain.addWidget(kJwtHBox(root) {
-            addit(cplaylist, 1)
-            addit(cfiles, 1)
-        }, 1)
+        if (!isMobile) {
+            lmain.addWidget(kJwtHBox(root) {
+                addit(cplaylist, 1)
+                addit(cfiles, 1)
+            }, 1)
+        } else {
+            lmain.addWidget(kJwtGeneric({WTabWidget(root)}) {
+                // TODO fonts much bigger, ...
+                addTab(cplaylist, "Playlist", WTabWidget.LoadPolicy.PreLoading)
+                addTab(cfiles, "Files", WTabWidget.LoadPolicy.PreLoading)
+                this.styleClass = "tabwidget"
+            })
+        }
         lmain.addWidget(kJwtHBox(root) {
             addit(KWPushButton("debug", "...") {
                 MusicPlayer.dogetMediaInfo()
@@ -574,7 +585,9 @@ class JwtApplication(env: WEnvironment) : WApplication(env) {
 class JwtServlet : WtServlet() {
 
     override fun createApplication(env: WEnvironment): WApplication {
-        return JwtApplication(env)
+        logger.debug("env: ${env.dpiScale} ${env.parameterMap} w ${env.screenWidth}")
+        val ismobile = false // TODO env.screenWidth <= 500
+        return JwtApplication(env, ismobile)
     }
 
     companion object {
@@ -586,8 +599,10 @@ class JwtServlet : WtServlet() {
 //        configuration.setProgressiveBootstrap(true) // should I?
         configuration.favicon = "/favicon.ico" // TODO nothing works, hardcoded paths in jwt...
 
+
         super.init()
         logger.info("servlet config: pbs:${configuration.progressiveBootstrap("/")} ua:${configuration.uaCompatible}")
+        logger.info("servlet config: ${configuration.metaHeaders} x ${configuration.properties} y ${configuration.internalDeploymentSize()}")
 
         // Enable websockets only if the servlet container has support for JSR-356 (Jetty 9, Tomcat 7, ...)
         // configuration.setWebSocketsEnabled(true);

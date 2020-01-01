@@ -106,7 +106,7 @@ object MusicPlayerBackend {
         val res = mp.media().parsing().parse(1000)
         println("parse res=$res")
         while (mp.media().parsing().status() == null) {
-            println("parse: ${mp.media().parsing().status()}")
+//            println("parse: ${mp.media().parsing().status()}")
             Thread.sleep(1)
         }
         val md = getMetadata(mp.media().meta().asMetaData())
