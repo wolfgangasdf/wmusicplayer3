@@ -16,10 +16,6 @@ import kotlin.math.floor
 
 private val logger = KotlinLogging.logger {}
 
-enum class UIMode {
-    UINORMAL, UIMINI, UISINGLECOL
-}
-
 private fun getMinutes(secs: Int): String {
     val min = floor(1.0/60*secs).toInt()
     return if (secs >= 0) "%01d:%02d".format(min, secs-60*min) else "--"
@@ -123,8 +119,8 @@ class ModelPlaylist(private val app: WApplication) : WAbstractTableModel() {
         return when (role) {
             ItemDataRole.Display -> WString(
                     when(index?.column) {
-                        1 -> MusicPlayer.cPlaylist[index.row].title
-                        2 -> getMinutes(MusicPlayer.cPlaylist[index.row].length)
+                        0 -> MusicPlayer.cPlaylist[index.row].title
+                        1 -> getMinutes(MusicPlayer.cPlaylist[index.row].length)
                         else -> ""
                     }
             )
@@ -132,8 +128,7 @@ class ModelPlaylist(private val app: WApplication) : WAbstractTableModel() {
         }
     }
 
-    //bug: can't scroll first column bug: add thin column before!
-    override fun getColumnCount(parent: WModelIndex?): Int = if (parent == null) 3 else 0
+    override fun getColumnCount(parent: WModelIndex?): Int = if (parent == null) 2 else 0
 
     // resetting the model to reload the playlist must not happen with high rate.
     private var tt: TimerTask? = null
@@ -152,12 +147,6 @@ class ModelPlaylist(private val app: WApplication) : WAbstractTableModel() {
         MusicPlayer.cPlaylist.addListener(ListChangeListener { resetModelDelayed() })
     }
 
-    // TODO unused ugly hack to update style of cell...
-    fun updateRow(row: Int) {
-        for (c in 0..getColumnCount(null))
-            setData(row, c, getData(row, c))
-    }
-
     override fun dropEvent(e: WDropEvent?, action: DropAction?, row: Int, column: Int, parent: WModelIndex?) {
         logger.debug("drop: $action $row $column")
         super.dropEvent(e, action, row, column, parent)
@@ -165,20 +154,19 @@ class ModelPlaylist(private val app: WApplication) : WAbstractTableModel() {
 }
 
 
-class ModelFiles(parent: WObject) : WAbstractTableModel() { // TODO link to parent?
+class ModelFiles : WAbstractTableModel() {
 
     val lfiles = FXCollections.observableArrayList<File>()!!
 
     override fun getRowCount(parent: WModelIndex?): Int = if (parent == null) { lfiles.size } else 0
     override fun getData(index: WModelIndex?, role: ItemDataRole?): Any? {
         return when (role) {
-            ItemDataRole.Display -> WString(if (index?.column == 1) lfiles[index.row].name else "")
+            ItemDataRole.Display -> WString(if (index?.column == 0) lfiles[index.row].name else "")
             else -> null
         }
     }
 
-    //bug: can't scroll first column bug: add thin column before!
-    override fun getColumnCount(parent: WModelIndex?): Int = if (parent == null) 2 else 0
+    override fun getColumnCount(parent: WModelIndex?): Int = if (parent == null) 1 else 0
 
     init {
         @Suppress("RedundantLambdaArrow")
@@ -186,10 +174,9 @@ class ModelFiles(parent: WObject) : WAbstractTableModel() { // TODO link to pare
             modelReset().trigger()
         }
     }
-
 }
 
-class CPlayer(app: JwtApplication, isMobile: Boolean) : WContainerWidget() {
+class CPlayer(app: JwtApplication, @Suppress("UNUSED_PARAMETER") isMobile: Boolean) : WContainerWidget() {
     private val lplayer = WVBoxLayout()
     private val btplay = KWPushButton("►", "Toggle play/pause") { MusicPlayer.dotoggle() }
     private val slider = kJwtGeneric( { WSlider() }, {
@@ -274,10 +261,21 @@ class CPlayer(app: JwtApplication, isMobile: Boolean) : WContainerWidget() {
     }
 }
 
-class CPlaylist(app: JwtApplication, isMobile: Boolean) : WContainerWidget() {
+class CPlaylist(app: JwtApplication, @Suppress("UNUSED_PARAMETER") isMobile: Boolean) : WContainerWidget() {
     private val lplaylist = WVBoxLayout()
     private var mplaylist: ModelPlaylist? = null
     private val plname = WLineEdit("plname")
+
+    inner class PlsItemDelegate: WItemDelegate() {
+        override fun update(widget: WWidget?, index: WModelIndex?, flags: EnumSet<ViewItemRenderFlag>?): WWidget? {
+            val wid = super.update(widget, index, flags)
+            // println("uuuuuuu: wid=$wid ${wid?.javaClass} mi=$index col: ${index?.column}")
+            if (wid is IndexText) {
+                wid.toggleStyleClass("Wt-valid", (wid.index.row == MusicPlayer.pCurrentPlaylistIdx.value))
+            }
+            return wid
+        }
+    }
 
     private val tvplaylist = kJwtGeneric({ KWTableView() }) {
         mplaylist = ModelPlaylist(app)
@@ -287,41 +285,34 @@ class CPlaylist(app: JwtApplication, isMobile: Boolean) : WContainerWidget() {
         rowHeight = WLength(28.0)
         positionScheme = PositionScheme.Relative
         onLayoutSizeChanged = { w, _ ->
-            setColumnWidth(0, WLength(0.0))
-            setColumnWidth(1, WLength(w - model.getColumnCount(null)*7.0 - 50))
-            setColumnWidth(2, WLength(50.0))
+            setColumnWidth(0, WLength(w - model.getColumnCount(null)*7.0 - 50))
+            setColumnWidth(1, WLength(50.0))
         }
         headerHeight = WLength(0.0)
         selectionMode = SelectionMode.Extended
         selectionBehavior = SelectionBehavior.Rows
         editTriggers = EnumSet.of(EditTrigger.None)
-        resize(WLength(2000.0), WLength(2000.0)) // hack to make both lists equal width
+
         doubleClicked().addListener(this) { mi, _ ->
             if (mi != null) {
                 MusicPlayer.dosetCurrentPlaylistIdx(mi.row)
                 MusicPlayer.playSong()
             }
         }
-        class PlsItemDelegate(parent: WObject): WItemDelegate() { // TODO link to parent?
-            override fun update(widget: WWidget?, index: WModelIndex?, flags: EnumSet<ViewItemRenderFlag>?): WWidget? {
-                val wid = super.update(widget, index, flags)
-                if (wid is IndexText) {
-                    println("UUUUUUU: row=${wid.index.row} (<> ${MusicPlayer.pCurrentPlaylistIdx.value}")
-                    wid.toggleStyleClass("Wt-valid", (wid.index.row == MusicPlayer.pCurrentPlaylistIdx.value))
-                    // TODO work but requires reload page...
-                }
-                return wid
-            }
-        }
-        itemDelegate = PlsItemDelegate(this)
+
+        itemDelegate = PlsItemDelegate()
     }
 
     private fun updateRow(row: Int) {
-        println("updaterow $row: ")
         if (row >= mplaylist!!.getRowCount(null)) return
         for (c in 0..mplaylist!!.getColumnCount(null)) {
             val mi = mplaylist!!.getIndex(row, c)
-            tvplaylist.itemDelegate.update(tvplaylist.itemWidget(mi), mi, EnumSet.noneOf(ViewItemRenderFlag::class.java))
+            val w = tvplaylist.itemWidget(mi)
+            // println("updaterow         col=$c mi=$mi w=$w")
+            // 20200111 didn't work anymore with jwt4.2: PlsItemDelegate receives w=null for col!=3
+            // tvplaylist.itemDelegate.update(w, mi, EnumSet.noneOf(ViewItemRenderFlag::class.java))
+            // so use this, check if it can be removed in future!
+            w?.toggleStyleClass("Wt-valid", (row == MusicPlayer.pCurrentPlaylistIdx.value))
         }
     }
 
@@ -360,7 +351,6 @@ class CPlaylist(app: JwtApplication, isMobile: Boolean) : WContainerWidget() {
         lplaylist.addWidget(tvplaylist, 1)
         bindprop2widget(app, MusicPlayer.pPlaylistName) { _, newv -> plname.text = newv }
         bindprop2widget(app, MusicPlayer.pCurrentPlaylistIdx) { oldv, newv ->
-            println("XXXXXXXXXX $oldv $newv")
             if (oldv != null) if (oldv.toInt() > -1) updateRow(oldv.toInt())
             if (newv.toInt() > -1) updateRow(newv.toInt())
         }
@@ -373,20 +363,19 @@ class CFiles(private val app: JwtApplication) : WContainerWidget() {
     private val currentfolder = WText("currentfolder")
 
     private val tvfiles = kJwtGeneric({ KWTableView() }) {
-        mfiles = ModelFiles(this)
+        mfiles = ModelFiles()
         model = mfiles
         isSortingEnabled = false
         setAlternatingRowColors(true)
         rowHeight = WLength(28.0)
         onLayoutSizeChanged = { w, _ ->
-            setColumnWidth(0, WLength(0.0))
-            setColumnWidth(1, WLength(w - model.getColumnCount(null)*7.0))
+            setColumnWidth(0, WLength(w - model.getColumnCount(null)*7.0))
         }
         headerHeight = WLength(0.0)
         selectionMode = SelectionMode.Extended
         selectionBehavior = SelectionBehavior.Rows
         editTriggers = EnumSet.of(EditTrigger.None)
-        resize(WLength(2000.0), WLength(2000.0)) // hack to make both lists equal width
+
         doubleClicked().addListener(this) { mi, _ ->
             if (mi != null) {
                 val f = mfiles!!.lfiles[mi.row]
@@ -433,6 +422,7 @@ class CFiles(private val app: JwtApplication) : WContainerWidget() {
         var cc = fdir.listFiles { file ->
             (if (includePls) Constants.soundFilePls else Constants.soundFile).matches(file.name) || (file.isDirectory && !file.name.startsWith("."))
         }
+        if (cc == null) cc = arrayOf<File>()
         cc = cc.sortedBy { a -> a.name.toLowerCase() }.toTypedArray()
         return cc.toList()
     }
@@ -558,14 +548,14 @@ class JwtApplication(env: WEnvironment, isMobile: Boolean) : WApplication(env) {
         lmain.addWidget(cplayer, 0, AlignmentFlag.Left)
         if (!isMobile) {
             lmain.addWidget(kJwtHBox(root) {
-                addit(cplaylist, 1)
-                addit(cfiles, 1)
+                addit(cplaylist, 0)
+                addit(cfiles, 0)
             }, 1)
         } else {
             lmain.addWidget(kJwtGeneric({WTabWidget(root)}) {
                 // TODO fonts much bigger, ...
-                addTab(cplaylist, "Playlist", ContentLoading.Eager) // TODO WTabWidget.LoadPolicy.PreLoading)
-                addTab(cfiles, "Files", ContentLoading.Eager) // TODO WTabWidget.LoadPolicy.PreLoading)
+                addTab(cplaylist, "Playlist", ContentLoading.Eager)
+                addTab(cfiles, "Files", ContentLoading.Eager)
                 this.styleClass = "tabwidget"
             })
         }
@@ -580,7 +570,7 @@ class JwtApplication(env: WEnvironment, isMobile: Boolean) : WApplication(env) {
         enableUpdates()
 
         logger.info("Application initialized!")
-        logger.debug("env: ${env.hasAjax()} ${env.hasJavaScript()} ${env.hasWebGL()}")
+        logger.debug("env ajax=${env.hasAjax()} js=${env.hasJavaScript()} webgl=${env.hasWebGL()}")
 
         // init stuff after shown
         val app = this
@@ -595,8 +585,8 @@ class JwtApplication(env: WEnvironment, isMobile: Boolean) : WApplication(env) {
 class JwtServlet : WtServlet() {
 
     override fun createApplication(env: WEnvironment): WApplication {
-        logger.debug("env: ${env.dpiScale} ${env.parameterMap} w ${env.screenWidth}")
-        val ismobile = false // TODO env.screenWidth <= 500
+        logger.debug("env dpis=${env.dpiScale} parms=${env.parameterMap} w=${env.screenWidth}")
+        val ismobile = env.screenWidth <= 500
         return JwtApplication(env, ismobile)
     }
 
@@ -608,7 +598,6 @@ class JwtServlet : WtServlet() {
         logger.info("servlet init...")
 //        configuration.setProgressiveBootstrap(true) // should I?
         configuration.favicon = "/favicon.ico" // TODO nothing works, hardcoded paths in jwt...
-
 
         super.init()
         logger.info("servlet config: pbs:${configuration.progressiveBootstrap("/")} ua:${configuration.uaCompatible}")
