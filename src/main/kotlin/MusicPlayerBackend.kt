@@ -32,33 +32,33 @@ object MusicPlayerBackend {
     private fun iniCallbacks() {
         mp.events().addMediaPlayerEventListener(object : MediaPlayerEventAdapter() {
             override fun playing(mediaPlayer: MediaPlayer?) {
-                println("mpc playing")
+                logger.debug("mpc playing")
                 vpaused = false
                 vstopped = false
                 emitPlayingStateChanged()
             }
 
             override fun stopped(mediaPlayer: MediaPlayer?) {
-                println("mpc stopped")
+                logger.debug("mpc stopped")
                 vstopped = true
                 emitPlayingStateChanged()
             }
 
             override fun finished(mediaPlayer: MediaPlayer?) {
-                println("mpc finished")
+                logger.debug("mpc finished")
                 onCompleted()
             }
 
             override fun positionChanged(mediaPlayer: MediaPlayer?, newPosition: Float) {
-                //println("mpc position $newPosition ${getMetadata(mp.media().meta().asMetaData())}")
+                //logger.debug("mpc position $newPosition ${getMetadata(mp.media().meta().asMetaData())}")
             }
 
             override fun timeChanged(mediaPlayer: MediaPlayer?, newTime: Long) {
-                //println("mpc time $newTime")
+                //logger.debug("mpc time $newTime")
                 if (isStream) {
                     val newmd = getMetadata(mp.media().meta().asMetaData())
                     if (vmetadata != newmd) {
-                        println("   metadata changed!! $newmd")
+                        logger.debug("   metadata changed!! $newmd")
                         vmetadata.clear()
                         vmetadata.putAll(newmd)
                         onSongMetaChanged(vmetadata.getOrDefault("TITLE", "<title>"), vmetadata.getOrDefault("NOW_PLAYING", "<now_playing>"))
@@ -68,20 +68,20 @@ object MusicPlayerBackend {
             }
 
             override fun paused(mediaPlayer: MediaPlayer?) {
-                println("paused!")
+                logger.debug("paused!")
                 vpaused = true
                 emitPlayingStateChanged()
             }
 
-            override fun chapterChanged(mediaPlayer: MediaPlayer?, newChapter: Int) { println("mpc chapter: $newChapter") }
+            override fun chapterChanged(mediaPlayer: MediaPlayer?, newChapter: Int) { logger.debug("mpc chapter: $newChapter") }
 
-            override fun opening(mediaPlayer: MediaPlayer?) { println("mpc opening!") }
+            override fun opening(mediaPlayer: MediaPlayer?) { logger.debug("mpc opening!") }
 
-            override fun titleChanged(mediaPlayer: MediaPlayer?, newTitle: Int) { println("mpc title $newTitle") }
+            override fun titleChanged(mediaPlayer: MediaPlayer?, newTitle: Int) { logger.debug("mpc title $newTitle") }
 
-            override fun mediaPlayerReady(mediaPlayer: MediaPlayer?) { println("mpc ready") }
+            override fun mediaPlayerReady(mediaPlayer: MediaPlayer?) { logger.debug("mpc ready") }
 
-            override fun lengthChanged(mediaPlayer: MediaPlayer?, newLength: Long) { println("mpc length $newLength") }
+            override fun lengthChanged(mediaPlayer: MediaPlayer?, newLength: Long) { logger.debug("mpc length $newLength") }
 
             override fun error(mediaPlayer: MediaPlayer?) {
                 logger.error("mpc error!!!!")
@@ -104,9 +104,9 @@ object MusicPlayerBackend {
         mp.media().prepare(uri)
 
         val res = mp.media().parsing().parse(1000)
-        println("parse res=$res")
+        logger.debug("parse res=$res")
         while (mp.media().parsing().status() == null) {
-//            println("parse: ${mp.media().parsing().status()}")
+//            logger.debug("parse: ${mp.media().parsing().status()}")
             Thread.sleep(1)
         }
         val md = getMetadata(mp.media().meta().asMetaData())
@@ -130,8 +130,8 @@ object MusicPlayerBackend {
     }
 
     fun dogetMixers(): List<String> {
-        println("mix: ${mp.audio().outputDevices().joinToString(";") { it.toString() }}")
-        println("mix: ${mpc.mediaPlayerFactory().audio().audioOutputs().joinToString(";") { it.toString() }}")
+        logger.debug("mix: ${mp.audio().outputDevices().joinToString(";") { it.toString() }}")
+        logger.debug("mix: ${mpc.mediaPlayerFactory().audio().audioOutputs().joinToString(";") { it.toString() }}")
         return mp.audio().outputDevices().map { it.longName }
     }
     fun setMixer(mixer: String) {

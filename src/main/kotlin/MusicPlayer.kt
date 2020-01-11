@@ -1,5 +1,3 @@
-@file:Suppress("unused")
-
 import Constants.soundFileUri
 import javafx.beans.property.*
 import javafx.collections.FXCollections
@@ -18,9 +16,6 @@ It provides javafx observables for UI updates.
 object Constants {
 
     const val NQUICKPLS = 6 // number of quick playlist buttons
-
-    const val tagFile = "file://"
-    const val tagStream = "http://"
 
     // https://www.openwith.org/programs/vlc-media-player
     private const val audiofileexts = "flac|mp3|wav|ogg|m3u|a52|aac|oma|spx|m4a|mp1|mp2|xm|ac3|mod|wma|mka|m4p"
@@ -46,7 +41,6 @@ object MusicPlayer {
     val pTimeLen = SimpleDoubleProperty(0.0)
     val pVolume = SimpleIntegerProperty(50)
     val pIsPlaying = SimpleBooleanProperty(false)
-    var pLastFolder = "/"
 
     private val cIntPlaylist = FXCollections.observableArrayList<PlaylistItem>()
     val cPlaylist = FXCollections.synchronizedObservableList(cIntPlaylist)!!
@@ -59,7 +53,7 @@ object MusicPlayer {
     private fun getCurrentPlaylistItem() = if (pCurrentPlaylistIdx.value < 0 || pCurrentPlaylistIdx.value >= cPlaylist.size)
         null else cPlaylist[pCurrentPlaylistIdx.value]
 
-    fun shorten(s: String, len: Int) = if (s.length>len) s.substring(0, len) + ".." else s
+    // fun shorten(s: String, len: Int) = if (s.length>len) s.substring(0, len) + ".." else s
 
     fun playFirst() {
         dosetCurrentPlaylistIdx(0)
@@ -135,9 +129,7 @@ object MusicPlayer {
             val lengths = HashMap<Int, String>()
             while (inp.ready()) {
                 val s = inp.readLine().trim()
-                if (s.startsWith("[")) {
-                    // [playlist] etc, ignored
-                } else {
+                if (!s.startsWith("[")) { // [playlist] etc, ignored
                     when {
                         s.matches(numberTag) -> {
                             nume = numberTag.matchEntire(s)!!.groupValues[1].toInt()

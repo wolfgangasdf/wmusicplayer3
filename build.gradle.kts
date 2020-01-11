@@ -58,26 +58,26 @@ javafx {
 val javaFXOptions = the<org.openjfx.gradle.JavaFXOptions>()
 
 dependencies {
-    compile("org.jetbrains.kotlin:kotlin-stdlib:$kotlinversion")
-    compile("org.jetbrains.kotlin:kotlin-reflect:$kotlinversion")
-    compile("io.github.microutils:kotlin-logging:1.7.8")
-    compile("org.slf4j:slf4j-simple:1.8.0-beta4") // no colors, everything stderr
-    compile("org.eclipse.jetty:jetty-server:9.4.18.v20190429")
-    compile("org.eclipse.jetty:jetty-servlet:9.4.18.v20190429")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:$kotlinversion")
+    implementation("org.jetbrains.kotlin:kotlin-reflect:$kotlinversion")
+    implementation("io.github.microutils:kotlin-logging:1.7.8")
+    implementation("org.slf4j:slf4j-simple:1.8.0-beta4") // no colors, everything stderr
+    implementation("org.eclipse.jetty:jetty-server:9.4.18.v20190429")
+    implementation("org.eclipse.jetty:jetty-servlet:9.4.18.v20190429")
 
     // jwt
-    compile("eu.webtoolkit:jwt:3.3.12")
-    runtime("eu.webtoolkit:jwt:3.3.12")
-    compile("com.google.code.gson:gson:2.8.6") // otherwise, error with slider if opened with mac dashboard
+    implementation("eu.webtoolkit:jwt:4.2.0")
+//    runtime("eu.webtoolkit:jwt:4.2.0")
+    implementation("com.google.code.gson:gson:2.8.6") // otherwise, error with slider if opened with mac dashboard
 
     // kotlinx.html
-    compile("org.jetbrains.kotlinx:kotlinx-html-jvm:0.6.12")
+    implementation("org.jetbrains.kotlinx:kotlinx-html-jvm:0.6.12")
 
     // css dsl
-    compile ("azadev.kotlin:aza-kotlin-css:1.0")
+    implementation("azadev.kotlin:aza-kotlin-css:1.0")
 
     // sound
-    compile("uk.co.caprica:vlcj:4.2.0") // 4.1.0
+    implementation("uk.co.caprica:vlcj:4.2.0") // 4.1.0
 
     cPlatforms.forEach {platform ->
         val cfg = configurations.create("javafx_$platform")

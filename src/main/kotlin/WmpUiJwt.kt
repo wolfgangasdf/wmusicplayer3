@@ -1,5 +1,3 @@
-@file:Suppress("unused")
-
 import eu.webtoolkit.jwt.*
 import javafx.beans.Observable
 import javafx.collections.FXCollections
@@ -13,6 +11,7 @@ import java.nio.file.WatchService
 import java.util.*
 import kotlin.concurrent.thread
 import kotlin.concurrent.timerTask
+import kotlin.math.floor
 
 
 private val logger = KotlinLogging.logger {}
@@ -22,12 +21,12 @@ enum class UIMode {
 }
 
 private fun getMinutes(secs: Int): String {
-    val min = Math.floor(1.0/60*secs).toInt()
+    val min = floor(1.0/60*secs).toInt()
     return if (secs >= 0) "%01d:%02d".format(min, secs-60*min) else "--"
 }
 
 class SettingsWindow : WDialog("Settings") {
-    private val lplayer = WVBoxLayout(this.contents)
+    private val layout = WVBoxLayout()
     private val mixers = MusicPlayer.getMixers()
     private val sbmixer = kJwtGeneric({ WSelectionBox() }) {
         for (mix in mixers) addItem(mix)
@@ -39,6 +38,7 @@ class SettingsWindow : WDialog("Settings") {
     }
     init {
         isModal = true
+        contents.layout = layout
         footer.addWidget(KWPushButton("OK", "Save settings") {
             Settings.mixer = sbmixer.currentText.toString()
             Settings.port = lePort.text.toString().toInt()
@@ -48,12 +48,12 @@ class SettingsWindow : WDialog("Settings") {
         })
         footer.addWidget(KWPushButton("Cancel", "") { reject() })
 
-        lplayer.addWidget(kJwtVBox(contents) {
+        layout.addWidget(kJwtVBox(contents) {
             addit(WLabel("Audio mixers:"))
             addit(sbmixer)
         })
-        lplayer.addWidget(KWPushButton("Reset playlist folder", "set again afterwards!") { Settings.playlistFolder = "" })
-        lplayer.addWidget(kJwtHBox(contents) {
+        layout.addWidget(KWPushButton("Reset playlist folder", "set again afterwards!") { Settings.playlistFolder = "" })
+        layout.addWidget(kJwtHBox(contents) {
             addit(WLabel("Port (requires restart):"))
             addit(lePort)
         })
@@ -61,29 +61,35 @@ class SettingsWindow : WDialog("Settings") {
 }
 
 class AddURLWindow : WDialog("Add stream URL...") {
-    private val lplayer = WVBoxLayout(this.contents)
+    private val layout = WVBoxLayout()
+    private val leTitle = kJwtGeneric({ WLineEdit() })
     private val leUrl = kJwtGeneric({ WLineEdit() }) {
         text = "http://"
     }
     init {
         isModal = true
+        contents.layout = layout
         footer.addWidget(KWPushButton("OK", "Add URL to playlist") {
             if (leUrl.text.startsWith("http")) {
-                MusicPlayer.addToPlaylist(leUrl.text, null, false)
+                MusicPlayer.addToPlaylist(leUrl.text, null, false, title = leTitle.text)
             }
             accept()
         })
         footer.addWidget(KWPushButton("Cancel", "") { reject() })
-        lplayer.addWidget(WLabel("Enter URL of mp3 stream:"))
-        lplayer.addWidget(leUrl)
+        layout.addWidget(WLabel("URL of stream:"))
+        layout.addWidget(leUrl)
+        layout.addWidget(WLabel("Title:"))
+        layout.addWidget(leTitle)
     }
 }
 
 class EditPLSentry(index: Int?) : WDialog("Edit playlist entry...") {
-    private val lplayer = WVBoxLayout(this.contents)
+    private val layout = WVBoxLayout()
     private val leURI = kJwtGeneric({ WLineEdit() })
     private val leTitle = kJwtGeneric({ WLineEdit() })
     init {
+        isModal = true
+        contents.layout = layout
         if (index != null) {
             val pli = MusicPlayer.cPlaylist[index]
             leURI.text = pli.name
@@ -96,31 +102,27 @@ class EditPLSentry(index: Int?) : WDialog("Edit playlist entry...") {
             })
         }
         width = WLength(350.0)
-        isModal = true
         footer.addWidget(KWPushButton("Add entry", "") {
             MusicPlayer.addToPlaylist(leURI.text, title = leTitle.text, clearPlayListIfPls = false)
             accept()
         })
         footer.addWidget(KWPushButton("Cancel", "") { reject() })
-        lplayer.addWidget(WLabel("URI (file:///... or http://....):"))
-        lplayer.addWidget(leURI, 1)
-        lplayer.addWidget(WLabel("Title:"))
-        lplayer.addWidget(leTitle, 1)
+        layout.addWidget(WLabel("URI (file:///... or http://....):"))
+        layout.addWidget(leURI, 1)
+        layout.addWidget(WLabel("Title:"))
+        layout.addWidget(leTitle, 1)
     }
 }
 
 
-class ModelPlaylist(private val app: WApplication, parent: WObject) : WAbstractTableModel(parent) {
+class ModelPlaylist(private val app: WApplication) : WAbstractTableModel() {
 
     override fun getRowCount(parent: WModelIndex?): Int = if (parent == null) { MusicPlayer.cPlaylist.size } else 0
-
-    //bug: can't scroll first column bug: add thin column before!
-    override fun getColumnCount(parent: WModelIndex?): Int = if (parent == null) 3 else 0
-
-    override fun getData(index: WModelIndex, role: Int): Any? {
-        return if (index.row < 0) null else when (role) {
-            ItemDataRole.DisplayRole -> WString(
-                    when(index.column) {
+    override fun getData(index: WModelIndex?, role: ItemDataRole?): Any? {
+        if (index?.row == -1) return null
+        return when (role) {
+            ItemDataRole.Display -> WString(
+                    when(index?.column) {
                         1 -> MusicPlayer.cPlaylist[index.row].title
                         2 -> getMinutes(MusicPlayer.cPlaylist[index.row].length)
                         else -> ""
@@ -130,7 +132,8 @@ class ModelPlaylist(private val app: WApplication, parent: WObject) : WAbstractT
         }
     }
 
-    override fun getHeaderData(section: Int, orientation: Orientation, role: Int): Any? = null
+    //bug: can't scroll first column bug: add thin column before!
+    override fun getColumnCount(parent: WModelIndex?): Int = if (parent == null) 3 else 0
 
     // resetting the model to reload the playlist must not happen with high rate.
     private var tt: TimerTask? = null
@@ -149,7 +152,7 @@ class ModelPlaylist(private val app: WApplication, parent: WObject) : WAbstractT
         MusicPlayer.cPlaylist.addListener(ListChangeListener { resetModelDelayed() })
     }
 
-    // ugly hack to update style of cell...
+    // TODO unused ugly hack to update style of cell...
     fun updateRow(row: Int) {
         for (c in 0..getColumnCount(null))
             setData(row, c, getData(row, c))
@@ -162,23 +165,20 @@ class ModelPlaylist(private val app: WApplication, parent: WObject) : WAbstractT
 }
 
 
-class ModelFiles(parent: WObject) : WAbstractTableModel(parent) {
+class ModelFiles(parent: WObject) : WAbstractTableModel() { // TODO link to parent?
 
     val lfiles = FXCollections.observableArrayList<File>()!!
 
     override fun getRowCount(parent: WModelIndex?): Int = if (parent == null) { lfiles.size } else 0
-
-    //bug: can't scroll first column bug: add thin column before!
-    override fun getColumnCount(parent: WModelIndex?): Int = if (parent == null) 2 else 0
-
-    override fun getData(index: WModelIndex, role: Int): Any? {
+    override fun getData(index: WModelIndex?, role: ItemDataRole?): Any? {
         return when (role) {
-            ItemDataRole.DisplayRole -> WString(if (index.column == 1) lfiles[index.row].name else "")
+            ItemDataRole.Display -> WString(if (index?.column == 1) lfiles[index.row].name else "")
             else -> null
         }
     }
 
-    override fun getHeaderData(section: Int, orientation: Orientation, role: Int): Any? = null
+    //bug: can't scroll first column bug: add thin column before!
+    override fun getColumnCount(parent: WModelIndex?): Int = if (parent == null) 2 else 0
 
     init {
         @Suppress("RedundantLambdaArrow")
@@ -190,7 +190,7 @@ class ModelFiles(parent: WObject) : WAbstractTableModel(parent) {
 }
 
 class CPlayer(app: JwtApplication, isMobile: Boolean) : WContainerWidget() {
-    private val lplayer = WVBoxLayout(this)
+    private val lplayer = WVBoxLayout()
     private val btplay = KWPushButton("►", "Toggle play/pause") { MusicPlayer.dotoggle() }
     private val slider = kJwtGeneric( { WSlider() }, {
         isNativeControl = true // doesn't work if not!
@@ -223,14 +223,15 @@ class CPlayer(app: JwtApplication, isMobile: Boolean) : WContainerWidget() {
     }
 
     init {
+        this.layout = lplayer
         // TODO if (!isMobile) width = WLength(500.0)
         btplay.width = WLength("14%")
         songinfo1.height = WLength(32.0)
-        songinfo1.decorationStyle.font.weight = WFont.Weight.Bold
+        songinfo1.decorationStyle.font.weight = FontWeight.Bold
         songinfo2.height = WLength(30.0)
         codecInfo.height = WLength(10.0)
 //        codecInfo.styleClass = "codecinfo"
-        codecInfo.decorationStyle.font.size = WFont.Size.Smaller
+        codecInfo.decorationStyle.font.size = FontSize.Smaller
         lplayer.addWidget(kJwtHBox(this){
             addit(KWPushButton("⇠", "Previous song") { MusicPlayer.playPrevious() })
             addit(btplay)
@@ -244,10 +245,10 @@ class CPlayer(app: JwtApplication, isMobile: Boolean) : WContainerWidget() {
         })
 
         lplayer.addWidget(kJwtHBox(this){
-            addit(timecurr, 0, EnumSet.of(AlignmentFlag.AlignBottom))
-            addit(WText("/"), 0, EnumSet.of(AlignmentFlag.AlignBottom))
-            addit(timelen, 0, EnumSet.of(AlignmentFlag.AlignBottom))
-            addit(songinfo1, 1, EnumSet.of(AlignmentFlag.AlignBottom))
+            addit(timecurr, 0, EnumSet.of(AlignmentFlag.Bottom))
+            addit(WText("/"), 0, EnumSet.of(AlignmentFlag.Bottom))
+            addit(timelen, 0, EnumSet.of(AlignmentFlag.Bottom))
+            addit(songinfo1, 1, EnumSet.of(AlignmentFlag.Bottom))
         })
         lplayer.addWidget(songinfo2)
 
@@ -274,12 +275,12 @@ class CPlayer(app: JwtApplication, isMobile: Boolean) : WContainerWidget() {
 }
 
 class CPlaylist(app: JwtApplication, isMobile: Boolean) : WContainerWidget() {
-    private val lplaylist = WVBoxLayout(this)
+    private val lplaylist = WVBoxLayout()
     private var mplaylist: ModelPlaylist? = null
     private val plname = WLineEdit("plname")
 
     private val tvplaylist = kJwtGeneric({ KWTableView() }) {
-        mplaylist = ModelPlaylist(app,this)
+        mplaylist = ModelPlaylist(app)
         model = mplaylist
         isSortingEnabled = false
         setAlternatingRowColors(true)
@@ -291,9 +292,9 @@ class CPlaylist(app: JwtApplication, isMobile: Boolean) : WContainerWidget() {
             setColumnWidth(2, WLength(50.0))
         }
         headerHeight = WLength(0.0)
-        selectionMode = SelectionMode.ExtendedSelection
-        selectionBehavior = SelectionBehavior.SelectRows
-        editTriggers = EnumSet.of<WAbstractItemView.EditTrigger>(WAbstractItemView.EditTrigger.NoEditTrigger)
+        selectionMode = SelectionMode.Extended
+        selectionBehavior = SelectionBehavior.Rows
+        editTriggers = EnumSet.of(EditTrigger.None)
         resize(WLength(2000.0), WLength(2000.0)) // hack to make both lists equal width
         doubleClicked().addListener(this) { mi, _ ->
             if (mi != null) {
@@ -301,11 +302,13 @@ class CPlaylist(app: JwtApplication, isMobile: Boolean) : WContainerWidget() {
                 MusicPlayer.playSong()
             }
         }
-        class PlsItemDelegate(parent: WObject): WItemDelegate(parent) {
-            override fun update(widget: WWidget?, index: WModelIndex?, flags: EnumSet<ViewItemRenderFlag>?): WWidget {
+        class PlsItemDelegate(parent: WObject): WItemDelegate() { // TODO link to parent?
+            override fun update(widget: WWidget?, index: WModelIndex?, flags: EnumSet<ViewItemRenderFlag>?): WWidget? {
                 val wid = super.update(widget, index, flags)
                 if (wid is IndexText) {
+                    println("UUUUUUU: row=${wid.index.row} (<> ${MusicPlayer.pCurrentPlaylistIdx.value}")
                     wid.toggleStyleClass("Wt-valid", (wid.index.row == MusicPlayer.pCurrentPlaylistIdx.value))
+                    // TODO work but requires reload page...
                 }
                 return wid
             }
@@ -314,8 +317,8 @@ class CPlaylist(app: JwtApplication, isMobile: Boolean) : WContainerWidget() {
     }
 
     private fun updateRow(row: Int) {
+        println("updaterow $row: ")
         if (row >= mplaylist!!.getRowCount(null)) return
-        @Suppress("LoopToCallChain")
         for (c in 0..mplaylist!!.getColumnCount(null)) {
             val mi = mplaylist!!.getIndex(row, c)
             tvplaylist.itemDelegate.update(tvplaylist.itemWidget(mi), mi, EnumSet.noneOf(ViewItemRenderFlag::class.java))
@@ -329,6 +332,7 @@ class CPlaylist(app: JwtApplication, isMobile: Boolean) : WContainerWidget() {
     }
 
     init {
+        this.layout = lplaylist
         lplaylist.addWidget(kJwtHBox(this){
             addit(plname, 1)
             addit(KWPushButton("save", "Save current playlist in playlist folder") {
@@ -349,18 +353,22 @@ class CPlaylist(app: JwtApplication, isMobile: Boolean) : WContainerWidget() {
                 val i = tvplaylist.selectedIndexes.firstOrNull()?.row
                 EditPLSentry(i).show()
             })
+            addit(KWPushButton("+URL", "Add stream URL to playlist...") {
+                AddURLWindow().show()
+            })
         })
         lplaylist.addWidget(tvplaylist, 1)
         bindprop2widget(app, MusicPlayer.pPlaylistName) { _, newv -> plname.text = newv }
         bindprop2widget(app, MusicPlayer.pCurrentPlaylistIdx) { oldv, newv ->
-            if (oldv != null) updateRow(oldv.toInt())
-            updateRow(newv.toInt())
+            println("XXXXXXXXXX $oldv $newv")
+            if (oldv != null) if (oldv.toInt() > -1) updateRow(oldv.toInt())
+            if (newv.toInt() > -1) updateRow(newv.toInt())
         }
     }
 }
 
 class CFiles(private val app: JwtApplication) : WContainerWidget() {
-    private val lfiles = WVBoxLayout(this)
+    private val lfiles = WVBoxLayout()
     private var mfiles: ModelFiles? = null
     private val currentfolder = WText("currentfolder")
 
@@ -375,9 +383,9 @@ class CFiles(private val app: JwtApplication) : WContainerWidget() {
             setColumnWidth(1, WLength(w - model.getColumnCount(null)*7.0))
         }
         headerHeight = WLength(0.0)
-        selectionMode = SelectionMode.ExtendedSelection
-        selectionBehavior = SelectionBehavior.SelectRows
-        editTriggers = EnumSet.of<WAbstractItemView.EditTrigger>(WAbstractItemView.EditTrigger.NoEditTrigger)
+        selectionMode = SelectionMode.Extended
+        selectionBehavior = SelectionBehavior.Rows
+        editTriggers = EnumSet.of(EditTrigger.None)
         resize(WLength(2000.0), WLength(2000.0)) // hack to make both lists equal width
         doubleClicked().addListener(this) { mi, _ ->
             if (mi != null) {
@@ -470,6 +478,7 @@ class CFiles(private val app: JwtApplication) : WContainerWidget() {
     }
 
     init {
+        this.layout = lfiles
         lfiles.addWidget(currentfolder)
         lfiles.addWidget(kJwtHBox(this){
             addit(KWPushButton("+", "Add current file to playlist") {
@@ -533,7 +542,7 @@ class JwtApplication(env: WEnvironment, isMobile: Boolean) : WApplication(env) {
     }
 
     init {
-        logger.info("initialize Application sid=${WApplication.getInstance().sessionId} thread=${Thread.currentThread().id} agent=${env.agent}")
+        logger.info("initialize Application sid=${getInstance().sessionId} thread=${Thread.currentThread().id} agent=${env.agent}")
 
         setTitle("WMusicPlayer")
 
@@ -544,8 +553,9 @@ class JwtApplication(env: WEnvironment, isMobile: Boolean) : WApplication(env) {
         // for WText
         styleSheet.addRule("body", "font-family: verdana, helvetica, tahoma, sans-serif; font-size: 13px;")
 
-        val lmain = WVBoxLayout(root)
-        lmain.addWidget(cplayer, 0, AlignmentFlag.AlignLeft)
+        val lmain = WVBoxLayout()
+        root.layout = lmain
+        lmain.addWidget(cplayer, 0, AlignmentFlag.Left)
         if (!isMobile) {
             lmain.addWidget(kJwtHBox(root) {
                 addit(cplaylist, 1)
@@ -554,8 +564,8 @@ class JwtApplication(env: WEnvironment, isMobile: Boolean) : WApplication(env) {
         } else {
             lmain.addWidget(kJwtGeneric({WTabWidget(root)}) {
                 // TODO fonts much bigger, ...
-                addTab(cplaylist, "Playlist", WTabWidget.LoadPolicy.PreLoading)
-                addTab(cfiles, "Files", WTabWidget.LoadPolicy.PreLoading)
+                addTab(cplaylist, "Playlist", ContentLoading.Eager) // TODO WTabWidget.LoadPolicy.PreLoading)
+                addTab(cfiles, "Files", ContentLoading.Eager) // TODO WTabWidget.LoadPolicy.PreLoading)
                 this.styleClass = "tabwidget"
             })
         }

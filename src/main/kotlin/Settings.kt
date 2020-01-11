@@ -18,7 +18,7 @@ object Settings {
     var mixer = ""
 
     private var firstRun = false
-    private val props = java.util.Properties()
+    private val props = Properties()
 
     private fun getSettingsFile(): File {
         val fp = File(".").absoluteFile.parentFile // gets CWD!
@@ -67,10 +67,10 @@ object Settings {
     }
 
     fun getplscap(ii: Int): String {
-        return if (Settings.bQuickPls[ii] == "")
+        return if (bQuickPls[ii] == "")
             "none"
         else {
-            val f = File(Settings.bQuickPls[ii]).name.replace(".pls","")
+            val f = File(bQuickPls[ii]).name.replace(".pls","")
             val res = f.substring(0, listOf(7,f.length).min()!!)
             res
         }

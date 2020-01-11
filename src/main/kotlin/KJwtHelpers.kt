@@ -1,5 +1,3 @@
-@file:Suppress("unused")
-
 import eu.webtoolkit.jwt.*
 import java.util.*
 
@@ -8,8 +6,8 @@ import java.util.*
 @Suppress("LeakingThis")
 open class KJwtBox(type: Int, parent: WContainerWidget): WContainerWidget(parent) {
     private val mylayout = when(type) {
-        0 -> WHBoxLayout(this)
-        1 -> WVBoxLayout(this)
+        0 -> WHBoxLayout()
+        1 -> WVBoxLayout()
         else -> throw IllegalStateException("wrong box type $type")
     }
     init {

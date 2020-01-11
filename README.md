@@ -37,7 +37,7 @@ Contributions are of course very welcome!
 
 Package it:
 
-* run `gradle dist`. The resulting files are in `build/crosspackage`
+* run `./gradlew dist`. The resulting files are in `build/crosspackage`
 
 
 # Used frameworks #
