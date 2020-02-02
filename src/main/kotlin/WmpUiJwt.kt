@@ -213,7 +213,6 @@ class CPlayer(app: JwtApplication, @Suppress("UNUSED_PARAMETER") isMobile: Boole
 
     init {
         this.layout = lplayer
-//        setOverflow(Overflow.Scroll)
         width = WLength(500.0) // otherwise too narrow if mobile
         btplay.width = WLength("7%")
         songinfo1.height = WLength(32.0)
@@ -232,7 +231,6 @@ class CPlayer(app: JwtApplication, @Suppress("UNUSED_PARAMETER") isMobile: Boole
             addit(volume)
             addit(KWPushButton("V+", "Volume up") { MusicPlayer.incDecVolume(true) })
         })
-
         lplayer.addWidget(kJwtHBox(this){
             addit(timecurr, 0, EnumSet.of(AlignmentFlag.Bottom))
             addit(WText("/"), 0, EnumSet.of(AlignmentFlag.Bottom))
@@ -240,7 +238,6 @@ class CPlayer(app: JwtApplication, @Suppress("UNUSED_PARAMETER") isMobile: Boole
             addit(songinfo1, 1, EnumSet.of(AlignmentFlag.Bottom))
         })
         lplayer.addWidget(songinfo2)
-
         lplayer.addWidget(kJwtHBox(this){
             quickbtns.forEach { qb -> addit(qb) }
             addit(bquickedit)
@@ -282,11 +279,10 @@ class CPlaylist(app: JwtApplication, @Suppress("UNUSED_PARAMETER") isMobile: Boo
     private val tvplaylist = kJwtGeneric({ KWTableView() }) {
         mplaylist = ModelPlaylist(app)
         model = mplaylist
-        isScrollVisibilityEnabled = true
         isSortingEnabled = false
+        isScrollVisibilityEnabled = true
         setAlternatingRowColors(true)
         rowHeight = WLength(28.0)
-        positionScheme = PositionScheme.Relative
         onLayoutSizeChanged = { w, _ ->
             setColumnWidth(0, WLength(25.0))
             setColumnWidth(1, WLength(w - model.getColumnCount(null)*7.0 - 25 - 50))
@@ -296,6 +292,7 @@ class CPlaylist(app: JwtApplication, @Suppress("UNUSED_PARAMETER") isMobile: Boo
         selectionMode = SelectionMode.Extended
         selectionBehavior = SelectionBehavior.Rows
         editTriggers = EnumSet.of(EditTrigger.None)
+        height = WLength("10000") // bugfix, scrollbars don't appear otherwise (but tvfiles is ok)!
 
         clicked().addListener(this) { mi, _ ->
             if (mi != null && mi.column == 0) {
@@ -384,7 +381,7 @@ class CFiles(private val app: JwtApplication) : WContainerWidget() {
         doubleClicked().addListener(this) { mi, _ ->
             if (mi != null) {
                 val f = mfiles!!.lfiles[mi.row]
-                if (!f.isDirectory) addFileToPlaylist(f)
+                if (!f.isDirectory) addFileToPlaylist(f, true)
             }
         }
         clicked().addListener(this) { mi, _ ->
@@ -466,9 +463,9 @@ class CFiles(private val app: JwtApplication) : WContainerWidget() {
         loadDir(selectFile)
     }
 
-    private fun addFileToPlaylist(f: File) {
+    private fun addFileToPlaylist(f: File, clearPlayListIfPls: Boolean = false) {
         if (!f.isDirectory) {
-            MusicPlayer.addToPlaylist("file://" + f.path, null, clearPlayListIfPls = false)
+            MusicPlayer.addToPlaylist("file://" + f.path, null, clearPlayListIfPls)
         }
     }
 
@@ -545,13 +542,18 @@ class JwtApplication(env: WEnvironment, isMobile: Boolean) : WApplication(env) {
         // for WText
         styleSheet.addRule("body", "font-family: verdana, helvetica, tahoma, sans-serif; font-size: 14px;")
 
-        val cPlayerScrollable = WContainerWidget()
-        cPlayerScrollable.setOverflow(Overflow.Auto)
-        cPlayerScrollable.addWidget(cplayer)
+        val cPlayerScrollable = WContainerWidget().apply {
+            id = "cPlayerScrollable"
+            setOverflow(Overflow.Auto, Orientation.Horizontal)
+            setOverflow(Overflow.Auto, Orientation.Vertical) // bug, should be big enough.
+            addWidget(cplayer)
+        }
 
-        val cBelow = WContainerWidget()
         val lBelow = WVBoxLayout()
-        cBelow.layout = lBelow
+        val cBelow = WContainerWidget().apply {
+            id = "idBelow"
+            layout = lBelow
+        }
 
         if (!isMobile) {
             lBelow.addWidget(kJwtHBox(cBelow) {
@@ -562,21 +564,19 @@ class JwtApplication(env: WEnvironment, isMobile: Boolean) : WApplication(env) {
             lBelow.addWidget(kJwtGeneric({WTabWidget(cBelow)}) {
                 addTab(cplaylist, "Playlist", ContentLoading.Eager)
                 addTab(cfiles, "Files", ContentLoading.Eager)
-                this.styleClass = "tabwidget"
+                id = "idTabwidget"
             })
         }
 
-        root.addWidget(cPlayerScrollable)
-        root.addWidget(cBelow)
+        // needed to fill vertically and show scrollbars
+        cBelow.height = WLength("85%") // very erratic if cPlayer is tall enough...
+        cplaylist.height = WLength("100%")
+        cfiles.height = WLength("100%")
 
-//        private val tInfo = WText("info")
-//        lBelow.addWidget(kJwtHBox(cBelow) {
-//            addit(KWPushButton("debug", "...") {
-//                MusicPlayer.dogetMediaInfo()
-//                //logger.debug("debug playlist=" + MusicPlayer.cPlaylist.joinToString { pli -> pli.name })
-//            }, 0)
-//            addit(tInfo, 1)
-//        }, 0)
+        val lroot = WVBoxLayout()
+        lroot.addWidget(cPlayerScrollable)
+        lroot.addWidget(cBelow)
+        root.layout = lroot
 
         enableUpdates()
 
