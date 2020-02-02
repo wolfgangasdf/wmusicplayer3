@@ -63,7 +63,7 @@ class KotlinxHtmlServlet : HttpServlet() {
         logger.debug("CSS = " + css.render())
 
         response!!.contentType = "text/html"
-        response.addHeader("Cache-Control", "no-cache,no-store,must-revalidate") // TODO doesn't work
+        response.addHeader("Cache-Control", "no-cache,no-store,must-revalidate") // doesn't work?
 
         response.writer.appendHTML(true).html {
             head {
@@ -74,6 +74,7 @@ class KotlinxHtmlServlet : HttpServlet() {
                     }
                 }
                 meta("viewport", "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0")
+                link(rel = "shortcut icon", href="/res/favicon.ico")
             }
             body {
                 form(action = "/mobile", method = FormMethod.post) {

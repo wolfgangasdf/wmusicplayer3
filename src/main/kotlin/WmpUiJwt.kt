@@ -119,8 +119,9 @@ class ModelPlaylist(private val app: WApplication) : WAbstractTableModel() {
         return when (role) {
             ItemDataRole.Display -> WString(
                     when(index?.column) {
-                        0 -> MusicPlayer.cPlaylist[index.row].title
-                        1 -> getMinutes(MusicPlayer.cPlaylist[index.row].length)
+                        0 -> "►"
+                        1 -> MusicPlayer.cPlaylist[index.row].title
+                        2 -> getMinutes(MusicPlayer.cPlaylist[index.row].length)
                         else -> ""
                     }
             )
@@ -128,7 +129,7 @@ class ModelPlaylist(private val app: WApplication) : WAbstractTableModel() {
         }
     }
 
-    override fun getColumnCount(parent: WModelIndex?): Int = if (parent == null) 2 else 0
+    override fun getColumnCount(parent: WModelIndex?): Int = if (parent == null) 3 else 0
 
     // resetting the model to reload the playlist must not happen with high rate.
     private var tt: TimerTask? = null
@@ -183,6 +184,7 @@ class CPlayer(app: JwtApplication, @Suppress("UNUSED_PARAMETER") isMobile: Boole
         isNativeControl = true // doesn't work if not!
         tickPosition = WSlider.NoTicks
         height = btplay.height
+        width = WLength("10%")
         valueChanged().addListener(this) { i ->
             MusicPlayer.skipTo(i.toDouble())
         }
@@ -211,13 +213,13 @@ class CPlayer(app: JwtApplication, @Suppress("UNUSED_PARAMETER") isMobile: Boole
 
     init {
         this.layout = lplayer
-        // TODO if (!isMobile) width = WLength(500.0)
-        btplay.width = WLength("14%")
+//        setOverflow(Overflow.Scroll)
+        width = WLength(500.0) // otherwise too narrow if mobile
+        btplay.width = WLength("7%")
         songinfo1.height = WLength(32.0)
         songinfo1.decorationStyle.font.weight = FontWeight.Bold
         songinfo2.height = WLength(30.0)
-        codecInfo.height = WLength(10.0)
-//        codecInfo.styleClass = "codecinfo"
+        codecInfo.height = WLength(15.0)
         codecInfo.decorationStyle.font.size = FontSize.Smaller
         lplayer.addWidget(kJwtHBox(this){
             addit(KWPushButton("⇠", "Previous song") { MusicPlayer.playPrevious() })
@@ -280,21 +282,23 @@ class CPlaylist(app: JwtApplication, @Suppress("UNUSED_PARAMETER") isMobile: Boo
     private val tvplaylist = kJwtGeneric({ KWTableView() }) {
         mplaylist = ModelPlaylist(app)
         model = mplaylist
+        isScrollVisibilityEnabled = true
         isSortingEnabled = false
         setAlternatingRowColors(true)
         rowHeight = WLength(28.0)
         positionScheme = PositionScheme.Relative
         onLayoutSizeChanged = { w, _ ->
-            setColumnWidth(0, WLength(w - model.getColumnCount(null)*7.0 - 50))
-            setColumnWidth(1, WLength(50.0))
+            setColumnWidth(0, WLength(25.0))
+            setColumnWidth(1, WLength(w - model.getColumnCount(null)*7.0 - 25 - 50))
+            setColumnWidth(2, WLength(50.0))
         }
         headerHeight = WLength(0.0)
         selectionMode = SelectionMode.Extended
         selectionBehavior = SelectionBehavior.Rows
         editTriggers = EnumSet.of(EditTrigger.None)
 
-        doubleClicked().addListener(this) { mi, _ ->
-            if (mi != null) {
+        clicked().addListener(this) { mi, _ ->
+            if (mi != null && mi.column == 0) {
                 MusicPlayer.dosetCurrentPlaylistIdx(mi.row)
                 MusicPlayer.playSong()
             }
@@ -366,6 +370,7 @@ class CFiles(private val app: JwtApplication) : WContainerWidget() {
         mfiles = ModelFiles()
         model = mfiles
         isSortingEnabled = false
+        isScrollVisibilityEnabled = true
         setAlternatingRowColors(true)
         rowHeight = WLength(28.0)
         onLayoutSizeChanged = { w, _ ->
@@ -524,7 +529,6 @@ class JwtApplication(env: WEnvironment, isMobile: Boolean) : WApplication(env) {
     private val cplayer = CPlayer(this, isMobile)
     private val cplaylist = CPlaylist(this, isMobile)
     private val cfiles = CFiles(this)
-    private val tInfo = WText("info")
 
     override fun quit() {
         logger.debug("quit application thread=${Thread.currentThread().id} agent=${environment.agent}")
@@ -538,34 +542,41 @@ class JwtApplication(env: WEnvironment, isMobile: Boolean) : WApplication(env) {
 
         setCssTheme("polished")
 
-        useStyleSheet(WLink("style/styles.css"))
-
         // for WText
-        styleSheet.addRule("body", "font-family: verdana, helvetica, tahoma, sans-serif; font-size: 13px;")
+        styleSheet.addRule("body", "font-family: verdana, helvetica, tahoma, sans-serif; font-size: 14px;")
 
-        val lmain = WVBoxLayout()
-        root.layout = lmain
-        lmain.addWidget(cplayer, 0, AlignmentFlag.Left)
+        val cPlayerScrollable = WContainerWidget()
+        cPlayerScrollable.setOverflow(Overflow.Auto)
+        cPlayerScrollable.addWidget(cplayer)
+
+        val cBelow = WContainerWidget()
+        val lBelow = WVBoxLayout()
+        cBelow.layout = lBelow
+
         if (!isMobile) {
-            lmain.addWidget(kJwtHBox(root) {
+            lBelow.addWidget(kJwtHBox(cBelow) {
                 addit(cplaylist, 0)
                 addit(cfiles, 0)
-            }, 1)
+            })
         } else {
-            lmain.addWidget(kJwtGeneric({WTabWidget(root)}) {
-                // TODO fonts much bigger, ...
+            lBelow.addWidget(kJwtGeneric({WTabWidget(cBelow)}) {
                 addTab(cplaylist, "Playlist", ContentLoading.Eager)
                 addTab(cfiles, "Files", ContentLoading.Eager)
                 this.styleClass = "tabwidget"
             })
         }
-        lmain.addWidget(kJwtHBox(root) {
-            addit(KWPushButton("debug", "...") {
-                MusicPlayer.dogetMediaInfo()
-                //logger.debug("debug playlist=" + MusicPlayer.cPlaylist.joinToString { pli -> pli.name })
-            }, 0)
-            addit(tInfo, 1)
-        }, 0)
+
+        root.addWidget(cPlayerScrollable)
+        root.addWidget(cBelow)
+
+//        private val tInfo = WText("info")
+//        lBelow.addWidget(kJwtHBox(cBelow) {
+//            addit(KWPushButton("debug", "...") {
+//                MusicPlayer.dogetMediaInfo()
+//                //logger.debug("debug playlist=" + MusicPlayer.cPlaylist.joinToString { pli -> pli.name })
+//            }, 0)
+//            addit(tInfo, 1)
+//        }, 0)
 
         enableUpdates()
 
@@ -585,7 +596,7 @@ class JwtApplication(env: WEnvironment, isMobile: Boolean) : WApplication(env) {
 class JwtServlet : WtServlet() {
 
     override fun createApplication(env: WEnvironment): WApplication {
-        logger.debug("env dpis=${env.dpiScale} parms=${env.parameterMap} w=${env.screenWidth}")
+        logger.debug("env dpis=${env.dpiScale} parms=${env.parameterMap} w=${env.screenWidth} ip=${env.internalPath}")
         val ismobile = env.screenWidth <= 500
         return JwtApplication(env, ismobile)
     }
@@ -595,16 +606,16 @@ class JwtServlet : WtServlet() {
     }
 
     init {
-        logger.info("servlet init...")
-//        configuration.setProgressiveBootstrap(true) // should I?
-        configuration.favicon = "/favicon.ico" // TODO nothing works, hardcoded paths in jwt...
-
         super.init()
+        logger.info("jwt servlet init...")
+        configuration.favicon = "/res/favicon.ico"
+
+        // need to define meta headers here (config) if not progressive bootstrap: https://redmine.webtoolkit.eu/boards/1/topics/14326
+        configuration.metaHeaders.add(MetaHeader(MetaHeaderType.Meta, "viewport", "user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width, height=device-height, target-densitydpi=device-dpi", "", "")) // for mobile
+        configuration.metaHeaders.add(MetaHeader(MetaHeaderType.Meta, "mobile-web-app-capable", "yes", "", ""))
+
         logger.info("servlet config: pbs:${configuration.progressiveBootstrap("/")} ua:${configuration.uaCompatible}")
         logger.info("servlet config: ${configuration.metaHeaders} x ${configuration.properties} y ${configuration.internalDeploymentSize()}")
-
-        // Enable websockets only if the servlet container has support for JSR-356 (Jetty 9, Tomcat 7, ...)
-        // configuration.setWebSocketsEnabled(true);
-        logger.info("servlet initialized!")
+        logger.info("jwt servlet initialized!")
     }
 }
