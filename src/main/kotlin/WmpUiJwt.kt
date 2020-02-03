@@ -557,8 +557,10 @@ class JwtApplication(env: WEnvironment, isMobile: Boolean) : WApplication(env) {
 
         if (!isMobile) {
             lBelow.addWidget(kJwtHBox(cBelow) {
-                addit(cplaylist, 0)
-                addit(cfiles, 0)
+                cplaylist.width = WLength("50%")
+                cfiles.width = WLength("50%")
+                addit(cplaylist, 1)
+                addit(cfiles, 1)
             })
         } else {
             lBelow.addWidget(kJwtGeneric({WTabWidget(cBelow)}) {
