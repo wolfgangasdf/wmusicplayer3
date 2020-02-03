@@ -46,7 +46,7 @@ repositories {
     mavenLocal() // for jwt
     mavenCentral()
     jcenter() // for kotlinx.html, aza-css
-    // maven { setUrl("https://jitpack.io") } // jaadec
+    maven { setUrl("https://jitpack.io") } // jaudiotagger
 }
 
 javafx {
@@ -67,7 +67,6 @@ dependencies {
 
     // jwt
     implementation("eu.webtoolkit:jwt:4.2.0")
-//    runtime("eu.webtoolkit:jwt:4.2.0")
     implementation("com.google.code.gson:gson:2.8.6") // otherwise, error with slider if opened with mac dashboard
 
     // kotlinx.html
@@ -77,7 +76,11 @@ dependencies {
     implementation("azadev.kotlin:aza-kotlin-css:1.0")
 
     // sound
-    implementation("uk.co.caprica:vlcj:4.2.0") // 4.1.0
+    implementation("uk.co.caprica:vlcj:4.3.0")
+
+    // media info
+    implementation("org.bitbucket.ijabz:jaudiotagger:master-SNAPSHOT") // https://jitpack.io/#org.bitbucket.ijabz/jaudiotagger/master-SNAPSHOT
+
 
     cPlatforms.forEach {platform ->
         val cfg = configurations.create("javafx_$platform")

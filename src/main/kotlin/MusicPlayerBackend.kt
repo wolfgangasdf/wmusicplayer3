@@ -1,11 +1,15 @@
 
 
 import mu.KotlinLogging
+import org.jaudiotagger.audio.AudioFileIO
+import org.jaudiotagger.tag.FieldKey
+import org.jaudiotagger.tag.KeyNotFoundException
 import uk.co.caprica.vlcj.media.MetaData
 import uk.co.caprica.vlcj.player.base.MediaPlayer
 import uk.co.caprica.vlcj.player.base.MediaPlayerEventAdapter
 import uk.co.caprica.vlcj.player.component.AudioPlayerComponent
 import java.io.File
+import java.net.URI
 import java.net.URL
 
 /*
@@ -21,6 +25,7 @@ object MusicPlayerBackend {
 //    fun setContextClassLoader() { Thread.currentThread().contextClassLoader = loader }
 //
 
+    // http://capricasoftware.co.uk/projects/vlcj-4/tutorials/basic-audio-player
     private val mpc = AudioPlayerComponent()
     private val mp: MediaPlayer = mpc.mediaPlayer()
     private val vmetadata = mutableMapOf<String, String>()
@@ -99,23 +104,35 @@ object MusicPlayerBackend {
     var onSongMetaChanged: (/*streamtitle*/ String, /*now_playing*/ String) -> Unit =  { _, _ -> }
 
     data class ParseSongResult(val au: String, val al: String, val ti: String, val le: Int, val tit: String)
+
     fun parseSong(uri: String): ParseSongResult {
         val tit = File(uri).name
-        mp.media().prepare(uri)
-
-        val res = mp.media().parsing().parse(1000)
-        logger.debug("parse res=$res")
-        while (mp.media().parsing().status() == null) {
-//            logger.debug("parse: ${mp.media().parsing().status()}")
-            Thread.sleep(1)
+        val f = AudioFileIO.read(File(uri.removePrefix("file://")))
+        val tag = f.tag
+        return try {
+            ParseSongResult(tag.getFirst(FieldKey.ARTIST), tag.getFirst(FieldKey.ALBUM), tag.getFirst(FieldKey.TITLE),
+                    f.audioHeader.trackLength, tit) // tit is fallback-title (filename)
+        } catch(e: KeyNotFoundException) {
+            ParseSongResult("", "", "", f.audioHeader.trackLength, tit)
         }
-        val md = getMetadata(mp.media().meta().asMetaData())
-
-        return ParseSongResult(md.getOrDefault("ARTIST", ""),
-                md.getOrDefault("ALBUM", ""),
-                md.getOrDefault("TITLE", ""),
-                (mp.media().info().duration()/1000.0).toInt(), tit) // tit is fallback-title (filename)
     }
+
+// vlc doesn't parse in background, stops playing
+//    fun parseSong(uri: String): ParseSongResult {
+//        val tit = File(uri).name
+//        mp.media().prepare(uri)
+//        val res = mp.media().parsing().parse(1000)
+//        logger.debug("parse res=$res")
+//        while (mp.media().parsing().status() == null) {
+//            Thread.sleep(1)
+//        }
+//        val md = getMetadata(mp.media().meta().asMetaData())
+//
+//        return ParseSongResult(md.getOrDefault("ARTIST", ""),
+//                md.getOrDefault("ALBUM", ""),
+//                md.getOrDefault("TITLE", ""),
+//                (mp.media().info().duration()/1000.0).toInt(), tit) // tit is fallback-title (filename)
+//    }
 
     private var isStream = false
     fun dogetIsStream(): Boolean = isStream

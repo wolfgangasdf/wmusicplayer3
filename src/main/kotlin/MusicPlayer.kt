@@ -105,7 +105,7 @@ object MusicPlayer {
                 if (tit.startsWith("/")) tit = tit.substring(1)
             }
             logger.debug("adding: uri=$uri tit=$tit le=$le")
-            val newitem = PlaylistItem(uri, tit!!, le)
+            val newitem = PlaylistItem(uri, tit ?: uri, le)
             if (beforeId == null)
                 cPlaylist += newitem
             else {
@@ -265,10 +265,6 @@ object MusicPlayer {
 
     fun updateCurrentPlaylistItem() {
         pCurrentPlaylistIdx.value = cPlaylist.indexOf(currentPlaylistItem)
-    }
-
-    fun dogetMediaInfo() {
-        MusicPlayerBackend.dogetMediaInfo()
     }
 
     init {

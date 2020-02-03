@@ -45,6 +45,7 @@ Package it:
 * [Kotlin](https://kotlinlang.org)
 * [JWT](https://www.webtoolkit.eu/jwt)
 * [vlcj](https://github.com/caprica/vlcj/)
+* [jaudiotagger](http://www.jthink.net/jaudiotagger/)
 * [AzaKotlinCSS](https://github.com/olegcherr/Aza-Kotlin-CSS)
 * [Runtime plugin](https://github.com/beryx/badass-runtime-plugin) to make runtimes with JRE
 
