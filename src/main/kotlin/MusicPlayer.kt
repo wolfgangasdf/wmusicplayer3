@@ -247,20 +247,17 @@ object MusicPlayer {
 
     // plays currendId
     fun playSong() {
-
-        if (pCurrentPlaylistIdx.value == -1 && cPlaylist.size > 0) pCurrentPlaylistIdx.value = 0
-
-        if (pCurrentPlaylistIdx.value == null) dosetCurrentPlaylistIdx(0)
-        logger.debug("playsong $pCurrentPlaylistIdx")
-        if (pCurrentPlaylistIdx.value == null) {
-            return
+        if ((pCurrentPlaylistIdx.value == -1 || pCurrentPlaylistIdx.value > cPlaylist.size - 1) && cPlaylist.size > 0)
+            dosetCurrentPlaylistIdx(0)
+        else {
+            dosetCurrentPlaylistIdx(pCurrentPlaylistIdx.value)
         }
-
+        logger.debug("playsong $pCurrentPlaylistIdx")
         currentPlaylistItem = getCurrentPlaylistItem()
         val currfile = if (currentPlaylistItem == null) "" else currentPlaylistItem!!.name
         MusicPlayerBackend.play(currentPlaylistItem!!.name)
         updateVolume()
-        pCurrentFile.value = currfile // TODO was return val from play()
+        pCurrentFile.value = currfile
     }
 
     fun updateCurrentPlaylistItem() {

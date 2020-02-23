@@ -24,7 +24,7 @@ plugins {
     id("idea")
     application
     id("org.openjfx.javafxplugin") version "0.0.8"
-    id("com.github.ben-manes.versions") version "0.27.0"
+    id("com.github.ben-manes.versions") version "0.28.0"
     id("org.beryx.runtime") version "1.8.0"
 }
 
@@ -46,7 +46,10 @@ repositories {
     mavenLocal() // for jwt
     mavenCentral()
     jcenter() // for kotlinx.html, aza-css
-    maven { setUrl("https://jitpack.io") } // jaudiotagger
+    maven { // jitpack: jaudiotagger
+        setUrl("https://jitpack.io")
+        metadataSources { artifact() } // otherwise error for tagged versions
+    }
 }
 
 javafx {
@@ -70,7 +73,7 @@ dependencies {
     implementation("com.google.code.gson:gson:2.8.6") // otherwise, error with slider if opened with mac dashboard
 
     // kotlinx.html
-    implementation("org.jetbrains.kotlinx:kotlinx-html-jvm:0.6.12")
+    implementation("org.jetbrains.kotlinx:kotlinx-html-jvm:0.7.1")
 
     // css dsl
     implementation("azadev.kotlin:aza-kotlin-css:1.0")
@@ -79,7 +82,7 @@ dependencies {
     implementation("uk.co.caprica:vlcj:4.3.0")
 
     // media info
-    implementation("org.bitbucket.ijabz:jaudiotagger:master-SNAPSHOT") // https://jitpack.io/#org.bitbucket.ijabz/jaudiotagger/master-SNAPSHOT
+    implementation("org.bitbucket.ijabz:jaudiotagger:master-v2.2.5-g85343bc-481") // https://jitpack.io/#org.bitbucket.ijabz/jaudiotagger/master-SNAPSHOT
 
 
     cPlatforms.forEach {platform ->

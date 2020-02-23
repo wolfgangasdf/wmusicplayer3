@@ -9,7 +9,6 @@ import uk.co.caprica.vlcj.player.base.MediaPlayer
 import uk.co.caprica.vlcj.player.base.MediaPlayerEventAdapter
 import uk.co.caprica.vlcj.player.component.AudioPlayerComponent
 import java.io.File
-import java.net.URI
 import java.net.URL
 
 /*
@@ -117,7 +116,7 @@ object MusicPlayerBackend {
         }
     }
 
-// vlc doesn't parse in background, stops playing
+// vlcj doesn't parse in background, stops playing
 //    fun parseSong(uri: String): ParseSongResult {
 //        val tit = File(uri).name
 //        mp.media().prepare(uri)

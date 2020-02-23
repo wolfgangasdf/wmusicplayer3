@@ -139,7 +139,7 @@ class KotlinxHtmlServlet : HttpServlet() {
             }
 //            resp!!.sendRedirect("/mobile?asdf") // reload doesn't work
             doGet(req, resp) // send new html TODO doesn't work.
-            // TODO also disabling cache in header (above) doesn't work. WHY is browser page not refreshed??? It arrives at chrome, check the reply!
+            // also disabling cache in header (above) doesn't work. WHY is browser page not refreshed??? It arrives at chrome, check the reply!
         }
     }
 
