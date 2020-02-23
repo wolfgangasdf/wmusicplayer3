@@ -3,7 +3,6 @@
 import mu.KotlinLogging
 import org.jaudiotagger.audio.AudioFileIO
 import org.jaudiotagger.tag.FieldKey
-import org.jaudiotagger.tag.KeyNotFoundException
 import uk.co.caprica.vlcj.media.MetaData
 import uk.co.caprica.vlcj.player.base.MediaPlayer
 import uk.co.caprica.vlcj.player.base.MediaPlayerEventAdapter
@@ -111,7 +110,7 @@ object MusicPlayerBackend {
         return try {
             ParseSongResult(tag.getFirst(FieldKey.ARTIST), tag.getFirst(FieldKey.ALBUM), tag.getFirst(FieldKey.TITLE),
                     f.audioHeader.trackLength, tit) // tit is fallback-title (filename)
-        } catch(e: KeyNotFoundException) {
+        } catch(e: Exception) {
             ParseSongResult("", "", "", f.audioHeader.trackLength, tit)
         }
     }

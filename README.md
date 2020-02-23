@@ -13,6 +13,11 @@ It
 * has an optional simple plain-html control frontend without javascript.
 * has quick-playlist buttons.
 
+Note
+
+* Audio device selection works only after some music has been played. 
+
+
 # How to use
 
 * Install VLC into the default location.
