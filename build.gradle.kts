@@ -131,5 +131,10 @@ tasks.withType<KotlinCompile> {
 
 task("dist") {
     dependsOn("runtimeZip")
+    doLast {
+        println("Deleting build/[jre,install]")
+        project.delete(project.runtime.jreDir.get(), "${project.buildDir.path}/install")
+        println("Created zips in build/image-zip")
+    }
 }
 
