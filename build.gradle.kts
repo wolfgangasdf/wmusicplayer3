@@ -1,6 +1,6 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-val kotlinversion = "1.3.61"
+val kotlinversion = "1.3.70"
 
 buildscript {
     repositories {
@@ -20,7 +20,7 @@ java {
 }
 
 plugins {
-    kotlin("jvm") version "1.3.61"
+    kotlin("jvm") version "1.3.70"
     id("idea")
     application
     id("org.openjfx.javafxplugin") version "0.0.8"
@@ -53,7 +53,7 @@ repositories {
 }
 
 javafx {
-    version = "12"
+    version = "13"
     modules("javafx.base")
     // set compileOnly for crosspackage to avoid packaging host javafx jmods for all target platforms
     configuration = if (project.gradle.startParameter.taskNames.intersect(listOf("crosspackage", "dist")).isNotEmpty()) "compileOnly" else "compile"
@@ -79,7 +79,7 @@ dependencies {
     implementation("azadev.kotlin:aza-kotlin-css:1.0")
 
     // sound
-    implementation("uk.co.caprica:vlcj:4.3.0")
+    implementation("uk.co.caprica:vlcj:4.4.0")
 
     // media info
     implementation("org.bitbucket.ijabz:jaudiotagger:master-v2.2.5-g85343bc-481") // https://jitpack.io/#org.bitbucket.ijabz/jaudiotagger/master-SNAPSHOT

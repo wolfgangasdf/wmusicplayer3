@@ -20,6 +20,30 @@ class KotlinxHtmlServlet : HttpServlet() {
         val currentsong = MusicPlayer.pCurrentSong.value
         val currentfile = MusicPlayer.pCurrentFile.value
 
+        // respond to form submit
+        if (request != null) {
+            val p = request.getParameter("action")
+            if (p != null) {
+                operator fun Regex.contains(text: CharSequence): Boolean = this.matches(text)
+                when(p) {
+                    "play","pause" -> MusicPlayer.dotoggle()
+                    "vol+" -> MusicPlayer.incDecVolume(up = true)
+                    "vol-" -> MusicPlayer.incDecVolume(up = false)
+                    "prev" -> MusicPlayer.playPrevious()
+                    "next" -> MusicPlayer.playNext()
+                    "refresh" -> {  }
+                    else -> {
+                        logger.warn("unknown action $p")
+                    }
+                }
+            }
+            val quickpls = request.parameterNames.toList().find { pn -> pn.startsWith("pls-") }
+            if (quickpls != null) {
+                MusicPlayer.loadPlaylist(Settings.bQuickPls[quickpls.replace("pls-", "").toInt()], true)
+                MusicPlayer.playFirst()
+            }
+        }
+
         val css = Stylesheet {
             body {
                 backgroundColor = "#B0B0B0"
@@ -60,11 +84,8 @@ class KotlinxHtmlServlet : HttpServlet() {
                 overflow = AUTO
             }
         }
-        logger.debug("CSS = " + css.render())
 
         response!!.contentType = "text/html"
-        response.addHeader("Cache-Control", "no-cache,no-store,must-revalidate") // doesn't work?
-
         response.writer.appendHTML(true).html {
             head {
                 title = "WMP Mobile"
@@ -77,7 +98,8 @@ class KotlinxHtmlServlet : HttpServlet() {
                 link(rel = "shortcut icon", href="/res/favicon.ico")
             }
             body {
-                form(action = "/mobile", method = FormMethod.post) {
+                form(action = "/mobile", method = FormMethod.get) {
+                    onSubmit = "setTimeout(function() { window.location.reload(); }, 5)" // browser reload without Post/Redirect/Get
                     target = "myiframe" // to avoid redirect at post, but uses deprecated "target".
                     p {
                         input(name="action", type=InputType.submit, classes = "button" ) { value="prev" }
@@ -88,10 +110,7 @@ class KotlinxHtmlServlet : HttpServlet() {
                     }
                     p {
                         input(name="action", type=InputType.submit, classes = "button" ) { value="vol-" }
-                        +" "
-                        +volume
-                        logger.debug("wrote volume to html: $volume")
-                        +" "
+                        +" $volume "
                         input(name="action", type=InputType.submit, classes = "button" ) { value="vol+" }
                         +" "
                         input(name="action", type=InputType.submit, classes = "button" ) { value="refresh" }
@@ -114,33 +133,4 @@ class KotlinxHtmlServlet : HttpServlet() {
             }
         }
     }
-
-    override fun doPost(req: HttpServletRequest?, resp: HttpServletResponse?) {
-        if (req != null) {
-            val p = req.getParameter("action")
-            if (p != null) {
-                operator fun Regex.contains(text: CharSequence): Boolean = this.matches(text)
-                when(p) {
-                    "play","pause" -> MusicPlayer.dotoggle()
-                    "vol+" -> MusicPlayer.incDecVolume(up = true)
-                    "vol-" -> MusicPlayer.incDecVolume(up = false)
-                    "prev" -> MusicPlayer.playPrevious()
-                    "next" -> MusicPlayer.playNext()
-                    "refresh" -> {  }
-                    else -> {
-                        logger.warn("unknown action $p")
-                    }
-                }
-            }
-            val quickpls = req.parameterNames.toList().find { pn -> pn.startsWith("pls-") }
-            if (quickpls != null) {
-                MusicPlayer.loadPlaylist(Settings.bQuickPls[quickpls.replace("pls-", "").toInt()], true)
-                MusicPlayer.playFirst()
-            }
-//            resp!!.sendRedirect("/mobile?asdf") // reload doesn't work
-            doGet(req, resp) // send new html TODO doesn't work.
-            // also disabling cache in header (above) doesn't work. WHY is browser page not refreshed??? It arrives at chrome, check the reply!
-        }
-    }
-
 }
