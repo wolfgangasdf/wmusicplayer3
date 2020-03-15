@@ -176,7 +176,10 @@ object MusicPlayerBackend {
     }
     fun dogetMediaInfo(): String {
         logger.debug("media info: " + mp.media()?.info()?.audioTracks()?.firstOrNull())
-        return mp.media()?.info()?.audioTracks()?.firstOrNull()?.let { "${it.codecName()}/${it.codecDescription()},${it.channels()}/${it.rate()}" }?: ""
+        return mp.media()?.info()?.audioTracks()?.firstOrNull()?.let {
+            "${it.codecName()}|${it.codecDescription()}|${it.channels()}ch|${"%.1f".format(it.rate()/1e3)}kHz" +
+            (if (it.bitRate() > 0) "|${(it.bitRate()/1e3).toInt()}kbps" else "")
+        }?: ""
     }
 
     init {
