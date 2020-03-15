@@ -3,7 +3,6 @@ import java.util.*
 
 
 // for all box layouts where widgets can be added simply
-@Suppress("LeakingThis")
 open class KJwtBox(type: Int, parent: WContainerWidget): WContainerWidget(parent) {
     private val mylayout = when(type) {
         0 -> WHBoxLayout()

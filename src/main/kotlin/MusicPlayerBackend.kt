@@ -10,21 +10,17 @@ import uk.co.caprica.vlcj.player.component.AudioPlayerComponent
 import java.io.File
 import java.net.URL
 
-/*
-You can call play() all the time, also from onCompleted!
- */
 private val logger = KotlinLogging.logger {}
 
-// this is the backend actually playing songs, doesn't know about scaladin.
-// it plays gapless, i.e., you have to supply it with new songs within the thread
-object MusicPlayerBackend {
-//
-//    var loader: ClassLoader? = null
-//    fun setContextClassLoader() { Thread.currentThread().contextClassLoader = loader }
-//
 
-    // http://capricasoftware.co.uk/projects/vlcj-4/tutorials/basic-audio-player
-    private val mpc = AudioPlayerComponent()
+/*
+ This is the backend actually playing songs.
+ It plays gapless, i.e., you have to supply it with new songs within the thread
+ You can call play() all the time, also from onCompleted!
+ */
+object MusicPlayerBackend {
+
+    private val mpc = AudioPlayerComponent() // http://capricasoftware.co.uk/projects/vlcj-4/tutorials/basic-audio-player
     private val mp: MediaPlayer = mpc.mediaPlayer()
     private val vmetadata = mutableMapOf<String, String>()
     private var vpaused = false
@@ -88,8 +84,6 @@ object MusicPlayerBackend {
 
             override fun error(mediaPlayer: MediaPlayer?) {
                 logger.error("mpc error!!!!")
-//                mp.submit { mpc.release() }
-//                System.exit(1)
             }
         })
 

@@ -5,6 +5,7 @@ import org.eclipse.jetty.servlet.DefaultServlet
 import org.eclipse.jetty.servlet.ServletContextHandler
 import org.eclipse.jetty.servlet.ServletHolder
 
+const val metaViewport = "user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width, height=device-height, target-densitydpi=device-dpi"
 
 fun main() {
 
@@ -19,10 +20,6 @@ fun main() {
     logger.trace("trace")
 
     MusicPlayer // initialize it!
-
-//    for (url in (ClassLoader.getSystemClassLoader() as URLClassLoader).urLs) logger.debug("classpath: " + url.file)
-//    MusicPlayer.loader = Thread.currentThread().contextClassLoader
-//    MusicPlayerBackend.loader = Thread.currentThread().contextClassLoader
 
     val server = Server(Settings.port)
 

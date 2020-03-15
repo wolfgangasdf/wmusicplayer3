@@ -30,10 +30,6 @@ private val logger = KotlinLogging.logger {}
 
 object MusicPlayer {
 
-//    var loader: ClassLoader? = null
-//    fun setContextClassLoader() { Thread.currentThread().contextClassLoader = loader }
-
-    // public observables, multiple subscribers possible!
     val pCurrentFile = SimpleStringProperty("1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 ")
     val pCurrentSong = SimpleStringProperty("1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 ")
     val pCodecInfo = SimpleStringProperty("1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 ")
@@ -86,7 +82,6 @@ object MusicPlayer {
     }
 
     fun addToPlaylist(uri: String, beforeId: PlaylistItem? = null, clearPlayListIfPls: Boolean, title: String? = null, length: String? = null) {
-//        setContextClassLoader()
         if (uri.endsWith(".pls")) {
             val f2 = uri.replace("file://","")
             loadPlaylist(f2, clearPlayListIfPls)

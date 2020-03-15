@@ -13,6 +13,8 @@ import javax.servlet.http.HttpServletResponse
 private val logger = KotlinLogging.logger {}
 
 class KotlinxHtmlServlet : HttpServlet() {
+    private val colBackground = "#B0B0B0"
+    private val homescreenName = "WMP Mobile"
 
     override fun doGet(request: HttpServletRequest?, response: HttpServletResponse?) {
         val playlab = if (MusicPlayer.dogetPlaying()) "pause" else "play"
@@ -46,7 +48,7 @@ class KotlinxHtmlServlet : HttpServlet() {
 
         val css = Stylesheet {
             body {
-                backgroundColor = "#B0B0B0"
+                backgroundColor = colBackground
                 color = "#000"
                 fontFamily = "Arial"
                 lineHeight = 120.percent
@@ -88,16 +90,23 @@ class KotlinxHtmlServlet : HttpServlet() {
         response!!.contentType = "text/html"
         response.writer.appendHTML(true).html {
             head {
-                title = "WMP Mobile"
+                title = homescreenName
                 style {
                     unsafe {
                         raw(css.render())
                     }
                 }
-                meta("viewport", "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0")
+                meta("viewport", metaViewport)
+                meta("mobile-web-app-capable", "yes")
+                meta("theme-color", colBackground) // android
+                meta("application-name", homescreenName)
+                meta("apple-mobile-web-app-capable", "yes")
+                meta("apple-mobile-web-app-status-bar-style", "black-translucent")
+                meta("apple-mobile-web-app-title", homescreenName)
                 link(rel = "shortcut icon", href="/res/favicon.ico")
             }
             body {
+                h1 { +"wmusicplayer" }
                 form(action = "/mobile", method = FormMethod.get) {
                     onSubmit = "setTimeout(function() { window.location.reload(); }, 5)" // browser reload without Post/Redirect/Get
                     target = "myiframe" // to avoid redirect at post, but uses deprecated "target".

@@ -177,7 +177,7 @@ class ModelFiles : WAbstractTableModel() {
     }
 }
 
-class CPlayer(app: JwtApplication, @Suppress("UNUSED_PARAMETER") isMobile: Boolean) : WContainerWidget() {
+class CPlayer(app: JwtApplication) : WContainerWidget() {
     private val lplayer = WVBoxLayout()
     private val btplay = KWPushButton("►", "Toggle play/pause") { MusicPlayer.dotoggle() }
     private val slider = kJwtGeneric( { WSlider() }, {
@@ -189,12 +189,12 @@ class CPlayer(app: JwtApplication, @Suppress("UNUSED_PARAMETER") isMobile: Boole
             MusicPlayer.skipTo(i.toDouble())
         }
     })
-    private val volume = WText("100")
-    private val timecurr = WText("1:00")
-    private val timelen = WText("1:05:23")
-    private val songinfo1 = WText("songi1")
-    private val songinfo2 = WText("songi2")
-    private val codecInfo = WText("codecinfo")
+    private val volume = WText("100", TextFormat.Plain).apply { id = "volume" }
+    private val timecurr = WText("1:00", TextFormat.Plain).apply { id = "timecurr" }
+    private val timelen = WText("1:05:23", TextFormat.Plain).apply { id = "timelen" }
+    private val songinfo1 = WText("songi1", TextFormat.Plain).apply { id = "songinfo1" }
+    private val songinfo2 = WText("songi2", TextFormat.Plain).apply { id = "songinfo2" }
+    private val codecInfo = WText("codecinfo", TextFormat.Plain).apply { id = "codecInfo" }
     private val quickbtns = Array(Constants.NQUICKPLS) { i -> KWPushButton(Settings.getplscap(i), "Load Playlist $i") {
         if (bquickedit.text.value == "✏️") {
             MusicPlayer.loadPlaylist(Settings.bQuickPls[i], true)
@@ -212,6 +212,7 @@ class CPlayer(app: JwtApplication, @Suppress("UNUSED_PARAMETER") isMobile: Boole
     }
 
     init {
+        lplayer.setContentsMargins(0, 0, 0, 0)
         this.layout = lplayer
         width = WLength(500.0) // otherwise too narrow if mobile
         btplay.width = WLength("7%")
@@ -232,10 +233,12 @@ class CPlayer(app: JwtApplication, @Suppress("UNUSED_PARAMETER") isMobile: Boole
             addit(KWPushButton("V+", "Volume up") { MusicPlayer.incDecVolume(true) })
         })
         lplayer.addWidget(kJwtHBox(this){
-            addit(timecurr, 0, EnumSet.of(AlignmentFlag.Bottom))
-            addit(WText("/"), 0, EnumSet.of(AlignmentFlag.Bottom))
-            addit(timelen, 0, EnumSet.of(AlignmentFlag.Bottom))
-            addit(songinfo1, 1, EnumSet.of(AlignmentFlag.Bottom))
+            addit(kJwtHBox(this) {
+                addit(timecurr, 0)
+                addit(WText("/", TextFormat.Plain), 0)
+                addit(timelen, 0)
+            }, 0)
+            addit(songinfo1, 1)
         })
         lplayer.addWidget(songinfo2)
         lplayer.addWidget(kJwtHBox(this){
@@ -244,9 +247,9 @@ class CPlayer(app: JwtApplication, @Suppress("UNUSED_PARAMETER") isMobile: Boole
         })
         lplayer.addWidget(codecInfo)
 
-        bindprop2widget(app, MusicPlayer.pCurrentSong) { _, newv -> songinfo1.setText(newv) }
-        bindprop2widget(app, MusicPlayer.pCurrentFile) { _, newv -> songinfo2.setText(newv) }
-        bindprop2widget(app, MusicPlayer.pCodecInfo) { _, newv -> codecInfo.setText(newv) }
+        bindprop2widget(app, MusicPlayer.pCurrentSong) { _, newv -> songinfo1.setText(WString(newv)) }
+        bindprop2widget(app, MusicPlayer.pCurrentFile) { _, newv -> songinfo2.setText(WString(newv)) }
+        bindprop2widget(app, MusicPlayer.pCodecInfo) { _, newv -> codecInfo.setText(WString(newv)) }
         bindprop2widget(app, MusicPlayer.pTimePos) { _, newv ->
             timecurr.setText(getMinutes(newv.toInt()))
             slider.value = newv.toInt()
@@ -260,8 +263,8 @@ class CPlayer(app: JwtApplication, @Suppress("UNUSED_PARAMETER") isMobile: Boole
     }
 }
 
-class CPlaylist(app: JwtApplication, @Suppress("UNUSED_PARAMETER") isMobile: Boolean) : WContainerWidget() {
-    private val lplaylist = WVBoxLayout()
+class CPlaylist(app: JwtApplication) : WContainerWidget() {
+    private val lplaylist = WVBoxLayout().apply { setContentsMargins(0, 0, 0, 0) }
     private var mplaylist: ModelPlaylist? = null
     private val plname = WLineEdit("plname")
 
@@ -289,7 +292,7 @@ class CPlaylist(app: JwtApplication, @Suppress("UNUSED_PARAMETER") isMobile: Boo
             setColumnWidth(2, WLength(50.0))
         }
         headerHeight = WLength(0.0)
-        selectionMode = SelectionMode.Extended
+        selectionMode = if (app.isMobile) SelectionMode.Single else SelectionMode.Extended
         selectionBehavior = SelectionBehavior.Rows
         editTriggers = EnumSet.of(EditTrigger.None)
         height = WLength("10000") // bugfix, scrollbars don't appear otherwise (but tvfiles is ok)!
@@ -309,16 +312,11 @@ class CPlaylist(app: JwtApplication, @Suppress("UNUSED_PARAMETER") isMobile: Boo
         for (c in 0..mplaylist!!.getColumnCount(null)) {
             val mi = mplaylist!!.getIndex(row, c)
             val w = tvplaylist.itemWidget(mi)
-            // println("updaterow         col=$c mi=$mi w=$w")
-            // 20200111 didn't work anymore with jwt4.2: PlsItemDelegate receives w=null for col!=3
-            // tvplaylist.itemDelegate.update(w, mi, EnumSet.noneOf(ViewItemRenderFlag::class.java))
-            // so use this, check if it can be removed in future!
             w?.toggleStyleClass("Wt-valid", (row == MusicPlayer.pCurrentPlaylistIdx.value))
         }
     }
 
     fun scrollToCurrent() {
-        //mplaylist!!.modelReset().trigger() // need to refresh first because of delayed auto refresh
         val mi = mplaylist!!.getIndex(MusicPlayer.pCurrentPlaylistIdx.value, 0)
         tvplaylist.scrollTo(mi)
     }
@@ -359,9 +357,9 @@ class CPlaylist(app: JwtApplication, @Suppress("UNUSED_PARAMETER") isMobile: Boo
 }
 
 class CFiles(private val app: JwtApplication) : WContainerWidget() {
-    private val lfiles = WVBoxLayout()
+    private val lfiles = WVBoxLayout().apply { setContentsMargins(0, 0, 0, 0) }
     private var mfiles: ModelFiles? = null
-    private val currentfolder = WText("currentfolder")
+    private val currentfolder = WText("currentfolder", TextFormat.Plain)
 
     private val tvfiles = kJwtGeneric({ KWTableView() }) {
         mfiles = ModelFiles()
@@ -374,7 +372,7 @@ class CFiles(private val app: JwtApplication) : WContainerWidget() {
             setColumnWidth(0, WLength(w - model.getColumnCount(null)*7.0))
         }
         headerHeight = WLength(0.0)
-        selectionMode = SelectionMode.Extended
+        selectionMode = if (app.isMobile) SelectionMode.Single else SelectionMode.Extended
         selectionBehavior = SelectionBehavior.Rows
         editTriggers = EnumSet.of(EditTrigger.None)
 
@@ -512,9 +510,6 @@ class CFiles(private val app: JwtApplication) : WContainerWidget() {
             addit(KWPushButton("S", "Settings") {
                 SettingsWindow().show()
             })
-            addit(KWPushButton("?", "Help") {
-                logger.debug("help")
-            })
         })
         lfiles.addWidget(tvfiles, 1)
         loadDir()
@@ -522,10 +517,10 @@ class CFiles(private val app: JwtApplication) : WContainerWidget() {
 
 }
 
-class JwtApplication(env: WEnvironment, isMobile: Boolean) : WApplication(env) {
-    private val cplayer = CPlayer(this, isMobile)
-    private val cplaylist = CPlaylist(this, isMobile)
-    private val cfiles = CFiles(this)
+class JwtApplication(env: WEnvironment, val isMobile: Boolean) : WApplication(env) {
+    private val cplayer = CPlayer(this).apply { id = "cplayer" }
+    private val cplaylist = CPlaylist(this).apply { id = "cplaylist" }
+    private val cfiles = CFiles(this).apply { id = "cfiles" }
 
     override fun quit() {
         logger.debug("quit application thread=${Thread.currentThread().id} agent=${environment.agent}")
@@ -535,12 +530,12 @@ class JwtApplication(env: WEnvironment, isMobile: Boolean) : WApplication(env) {
     init {
         logger.info("initialize Application sid=${getInstance().sessionId} thread=${Thread.currentThread().id} agent=${env.agent}")
 
-        setTitle("WMusicPlayer")
+        setTitle("WMP") // also web app name
 
         setCssTheme("polished")
 
-        // for WText
         styleSheet.addRule("body", "font-family: verdana, helvetica, tahoma, sans-serif; font-size: 14px;")
+        styleSheet.addRule("#cPlayerScrollable", "min-height: min-content;")
 
         val cPlayerScrollable = WContainerWidget().apply {
             id = "cPlayerScrollable"
@@ -549,14 +544,17 @@ class JwtApplication(env: WEnvironment, isMobile: Boolean) : WApplication(env) {
             addWidget(cplayer)
         }
 
-        val lBelow = WVBoxLayout()
+        val lBelow = WVBoxLayout().apply {
+            setContentsMargins(0, 0, 0, 0)
+        }
         val cBelow = WContainerWidget().apply {
-            id = "idBelow"
+            id = "cBelow"
             layout = lBelow
         }
 
         if (!isMobile) {
             lBelow.addWidget(kJwtHBox(cBelow) {
+                setMargin(0)
                 cplaylist.width = WLength("50%")
                 cfiles.width = WLength("50%")
                 addit(cplaylist, 1)
@@ -564,6 +562,7 @@ class JwtApplication(env: WEnvironment, isMobile: Boolean) : WApplication(env) {
             })
         } else {
             lBelow.addWidget(kJwtGeneric({WTabWidget(cBelow)}) {
+                setMargin(0)
                 addTab(cplaylist, "Playlist", ContentLoading.Eager)
                 addTab(cfiles, "Files", ContentLoading.Eager)
                 id = "idTabwidget"
@@ -571,11 +570,11 @@ class JwtApplication(env: WEnvironment, isMobile: Boolean) : WApplication(env) {
         }
 
         // needed to fill vertically and show scrollbars
-        cBelow.height = WLength("85%") // very erratic if cPlayer is tall enough...
         cplaylist.height = WLength("100%")
         cfiles.height = WLength("100%")
 
         val lroot = WVBoxLayout()
+        if (isMobile) lroot.setContentsMargins(0, 0, 0, 0)
         lroot.addWidget(cPlayerScrollable)
         lroot.addWidget(cBelow)
         root.layout = lroot
@@ -613,7 +612,7 @@ class JwtServlet : WtServlet() {
         configuration.favicon = "/res/favicon.ico"
 
         // need to define meta headers here (config) if not progressive bootstrap: https://redmine.webtoolkit.eu/boards/1/topics/14326
-        configuration.metaHeaders.add(MetaHeader(MetaHeaderType.Meta, "viewport", "user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width, height=device-height, target-densitydpi=device-dpi", "", "")) // for mobile
+        configuration.metaHeaders.add(MetaHeader(MetaHeaderType.Meta, "viewport", metaViewport, "", ""))
         configuration.metaHeaders.add(MetaHeader(MetaHeaderType.Meta, "mobile-web-app-capable", "yes", "", ""))
 
         logger.info("servlet config: pbs:${configuration.progressiveBootstrap("/")} ua:${configuration.uaCompatible}")
