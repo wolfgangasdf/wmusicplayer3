@@ -180,9 +180,9 @@ object MusicPlayerBackend {
         logger.debug("set vol $vol")
         mp.submit { mp.audio().setVolume(vol) }
     }
-    fun dogetMediaInfo(): String? {
+    fun dogetMediaInfo(): String {
         logger.debug("media info: " + mp.media()?.info()?.audioTracks()?.firstOrNull())
-        return mp.media()?.info()?.audioTracks()?.firstOrNull()?.let { "${it.codecName()}/${it.codecDescription()},${it.channels()}/${it.rate()}" }
+        return mp.media()?.info()?.audioTracks()?.firstOrNull()?.let { "${it.codecName()}/${it.codecDescription()},${it.channels()}/${it.rate()}" }?: ""
     }
 
     init {
