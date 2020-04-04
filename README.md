@@ -22,7 +22,7 @@ Note
 
 * Install VLC into the default location.
 * [Download a zip](https://github.com/wolfgangasdf/gmail-attachment-remover/releases), extract it somewhere and run
-`bin/wmusicplayer.bat` (Windows) or `bin/wmusicplayer` (Linux/Mac).
+`bin/wmusicplayer.bat` (Windows) or `bin/wmusicplayer` (Linux/Mac). It is not signed, google for "open unsigned mac/win".
 * I run this in a [GNU screen](https://en.wikipedia.org/wiki/GNU_Screen) that is started automatically.
 
 You can access WMP using different methods:

@@ -2,21 +2,17 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 val kotlinversion = "1.3.70"
 
-buildscript {
-    repositories {
-        mavenCentral()
-    }
-}
-
 group = "com.wolle"
 version = ""
 val cPlatforms = listOf("mac") // compile for these platforms. "mac", "linux", "win"
 
 println("Current Java version: ${JavaVersion.current()}")
-java {
-    sourceCompatibility = JavaVersion.VERSION_11
-    targetCompatibility = JavaVersion.VERSION_11
-    if (JavaVersion.current().toString() != "13") throw GradleException("Use Java 13")
+if (JavaVersion.current().majorVersion.toInt() < 14) throw GradleException("Use Java >= 14")
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
 }
 
 plugins {
