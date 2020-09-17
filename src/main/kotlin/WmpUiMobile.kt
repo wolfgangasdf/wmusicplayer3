@@ -134,6 +134,12 @@ class KotlinxHtmlServlet : HttpServlet() {
                             +" "
                         }
                     }
+                    br
+                    div("links") {
+                        a("/") {
+                            + "full player"
+                        }
+                    }
                 }
                 iframe {
                     name = "myiframe"

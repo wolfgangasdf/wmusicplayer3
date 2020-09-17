@@ -71,7 +71,7 @@ object Settings {
             "none"
         else {
             val f = File(bQuickPls[ii]).name.replace(".pls","")
-            val res = f.substring(0, listOf(7,f.length).min()!!)
+            val res = f.substring(0, listOf(7,f.length).minOrNull()!!)
             res
         }
     }

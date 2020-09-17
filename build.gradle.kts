@@ -1,6 +1,6 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-val kotlinversion = "1.3.70"
+val kotlinversion = "1.4.10"
 
 group = "com.wolle"
 version = ""
@@ -16,12 +16,12 @@ buildscript {
 }
 
 plugins {
-    kotlin("jvm") version "1.3.70"
+    kotlin("jvm") version "1.4.10"
     id("idea")
     application
-    id("org.openjfx.javafxplugin") version "0.0.8"
-    id("com.github.ben-manes.versions") version "0.28.0"
-    id("org.beryx.runtime") version "1.8.0"
+    id("org.openjfx.javafxplugin") version "0.0.9"
+    id("com.github.ben-manes.versions") version "0.33.0"
+    id("org.beryx.runtime") version "1.11.4"
 }
 
 application {
@@ -42,14 +42,14 @@ repositories {
     mavenLocal() // for jwt
     mavenCentral()
     jcenter() // for kotlinx.html, aza-css
-    maven { // jitpack: jaudiotagger
+    maven { // jitpack: jaudiotagger, jwt
         setUrl("https://jitpack.io")
         metadataSources { artifact() } // otherwise error for tagged versions
     }
 }
 
 javafx {
-    version = "13"
+    version = "14"
     modules("javafx.base")
     // set compileOnly for crosspackage to avoid packaging host javafx jmods for all target platforms
     configuration = if (project.gradle.startParameter.taskNames.intersect(listOf("crosspackage", "dist")).isNotEmpty()) "compileOnly" else "compile"
@@ -59,26 +59,27 @@ val javaFXOptions = the<org.openjfx.gradle.JavaFXOptions>()
 dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib:$kotlinversion")
     implementation("org.jetbrains.kotlin:kotlin-reflect:$kotlinversion")
-    implementation("io.github.microutils:kotlin-logging:1.7.8")
+    implementation("io.github.microutils:kotlin-logging:1.11.5")
     implementation("org.slf4j:slf4j-simple:1.8.0-beta4") // no colors, everything stderr
-    implementation("org.eclipse.jetty:jetty-server:9.4.18.v20190429")
-    implementation("org.eclipse.jetty:jetty-servlet:9.4.18.v20190429")
+    implementation("org.eclipse.jetty:jetty-server:9.4.31.v20200723")
+    implementation("org.eclipse.jetty:jetty-servlet:9.4.31.v20200723")
 
     // jwt
-    implementation("eu.webtoolkit:jwt:4.2.0")
+    implementation("com.github.emweb:jwt:4.4.0") // https://jitpack.io/#emweb/jwt
     implementation("com.google.code.gson:gson:2.8.6") // otherwise, error with slider if opened with mac dashboard
+    implementation("commons-fileupload:commons-fileupload:1.4") // needed for jwt, bug?
 
     // kotlinx.html
-    implementation("org.jetbrains.kotlinx:kotlinx-html-jvm:0.7.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-html-jvm:0.7.2") // jcenter
 
     // css dsl
     implementation("azadev.kotlin:aza-kotlin-css:1.0")
 
     // sound
-    implementation("uk.co.caprica:vlcj:4.4.0")
+    implementation("uk.co.caprica:vlcj:4.6.0")
 
     // media info
-    implementation("org.bitbucket.ijabz:jaudiotagger:master-v2.2.5-g85343bc-481") // https://jitpack.io/#org.bitbucket.ijabz/jaudiotagger/master-SNAPSHOT
+    implementation("org.bitbucket.ijabz:jaudiotagger:v2.2.5") // https://jitpack.io/#org.bitbucket.ijabz/jaudiotagger
 
 
     cPlatforms.forEach {platform ->
