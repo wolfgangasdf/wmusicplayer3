@@ -535,7 +535,8 @@ class JwtApplication(env: WEnvironment, val isMobile: Boolean) : WApplication(en
         setCssTheme("polished")
 
         styleSheet.addRule("body", "font-family: verdana, helvetica, tahoma, sans-serif; font-size: 14px;")
-        styleSheet.addRule("#cPlayerScrollable", "min-height: min-content;")
+        styleSheet.addRule("#cPlayerScrollable", "-webkit-flex: 1 0 auto !important;") // TODO hack chrome desktop player height
+        styleSheet.addRule("#cPlayerScrollable", "flex: 1 0 auto !important;") // TODO hack chrome desktop player height
 
         val cPlayerScrollable = WContainerWidget().apply {
             id = "cPlayerScrollable"
