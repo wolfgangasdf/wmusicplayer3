@@ -27,7 +27,8 @@ plugins {
 application {
     mainClassName = "MainKt"
     //defaultTasks = tasks.run
-    applicationDefaultJvmArgs = listOf("-Dorg.eclipse.jetty.server.Request.maxFormKeys=2000")
+    applicationDefaultJvmArgs = listOf("-Dprism.verbose=true", "-Dprism.order=sw", // use software renderer
+    	"-Dorg.eclipse.jetty.server.Request.maxFormKeys=2000")
 }
 
 runtime {
