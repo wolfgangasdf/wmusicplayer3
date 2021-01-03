@@ -1,13 +1,14 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-val kotlinversion = "1.4.10"
+val kotlinversion = "1.4.21"
+val javaversion = 15
 
 group = "com.wolle"
 version = ""
 val cPlatforms = listOf("mac") // compile for these platforms. "mac", "linux", "win"
 
 println("Current Java version: ${JavaVersion.current()}")
-if (JavaVersion.current().majorVersion.toInt() < 14) throw GradleException("Use Java >= 14")
+if (JavaVersion.current().majorVersion.toInt() < javaversion) throw GradleException("Use Java >= $javaversion")
 
 buildscript {
     repositories {
@@ -16,16 +17,16 @@ buildscript {
 }
 
 plugins {
-    kotlin("jvm") version "1.4.10"
+    kotlin("jvm") version "1.4.21"
     id("idea")
     application
     id("org.openjfx.javafxplugin") version "0.0.9"
-    id("com.github.ben-manes.versions") version "0.33.0"
-    id("org.beryx.runtime") version "1.11.4"
+    id("com.github.ben-manes.versions") version "0.36.0"
+    id("org.beryx.runtime") version "1.12.1"
 }
 
 application {
-    mainClassName = "MainKt"
+    mainClass.set("MainKt")
     //defaultTasks = tasks.run
     applicationDefaultJvmArgs = listOf("-Dprism.verbose=true", "-Dprism.order=sw", // use software renderer
     	"-Dorg.eclipse.jetty.server.Request.maxFormKeys=2000")
@@ -40,47 +41,56 @@ runtime {
 }
 
 repositories {
-    mavenLocal() // for jwt
     mavenCentral()
-    jcenter() // for kotlinx.html, aza-css
-    maven { // jitpack: jaudiotagger, jwt
+    jcenter {
+        content {
+            includeModule("org.jetbrains.kotlinx", "kotlinx-html-jvm")
+            includeModule("azadev.kotlin", "aza-kotlin-css")
+        }
+    }
+    maven {
         setUrl("https://jitpack.io")
-        metadataSources { artifact() } // otherwise error for tagged versions
+        content {
+            includeModule("org.bitbucket.ijabz", "jaudiotagger")
+            includeModule("com.github.emweb", "jwt")
+        }
     }
 }
 
 javafx {
-    version = "14"
+    version = "$javaversion"
     modules("javafx.base")
     // set compileOnly for crosspackage to avoid packaging host javafx jmods for all target platforms
-    configuration = if (project.gradle.startParameter.taskNames.intersect(listOf("crosspackage", "dist")).isNotEmpty()) "compileOnly" else "compile"
+    configuration = if (project.gradle.startParameter.taskNames.intersect(listOf("crosspackage", "dist")).isNotEmpty()) "compileOnly" else "implementation"
 }
 val javaFXOptions = the<org.openjfx.gradle.JavaFXOptions>()
 
 dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib:$kotlinversion")
     implementation("org.jetbrains.kotlin:kotlin-reflect:$kotlinversion")
-    implementation("io.github.microutils:kotlin-logging:1.11.5")
+    implementation("io.github.microutils:kotlin-logging:2.0.4")
     implementation("org.slf4j:slf4j-simple:1.8.0-beta4") // no colors, everything stderr
-    implementation("org.eclipse.jetty:jetty-server:9.4.31.v20200723")
+    implementation("org.eclipse.jetty:jetty-server:9.4.31.v20200723") // don't upgrade, jwt needs servlet 3 container
     implementation("org.eclipse.jetty:jetty-servlet:9.4.31.v20200723")
 
     // jwt
-    implementation("com.github.emweb:jwt:4.4.0") // https://jitpack.io/#emweb/jwt
+    implementation("com.github.emweb:jwt:4.5.0") // https://jitpack.io/#emweb/jwt
     implementation("com.google.code.gson:gson:2.8.6") // otherwise, error with slider if opened with mac dashboard
     implementation("commons-fileupload:commons-fileupload:1.4") // needed for jwt, bug?
 
     // kotlinx.html
-    implementation("org.jetbrains.kotlinx:kotlinx-html-jvm:0.7.2") // jcenter
+    implementation("org.jetbrains.kotlinx:kotlinx-html-jvm:0.7.2")  {
+        exclude("org.jetbrains.kotlin", "kotlin-stdlib-jdk8")
+    }
 
     // css dsl
     implementation("azadev.kotlin:aza-kotlin-css:1.0")
 
     // sound
-    implementation("uk.co.caprica:vlcj:4.6.0")
+    implementation("uk.co.caprica:vlcj:4.7.0")
 
     // media info
-    implementation("org.bitbucket.ijabz:jaudiotagger:v2.2.5") // https://jitpack.io/#org.bitbucket.ijabz/jaudiotagger
+    implementation("org.bitbucket.ijabz:jaudiotagger:2.2.5") // https://jitpack.io/#org.bitbucket.ijabz/jaudiotagger
 
 
     cPlatforms.forEach {platform ->
