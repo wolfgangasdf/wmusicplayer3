@@ -412,7 +412,8 @@ class CFiles(private val app: JwtApplication) : WContainerWidget() {
                         key.reset()
                         callback()
                     }
-                } catch (e: ClosedWatchServiceException) {
+                } catch (_: ClosedWatchServiceException) {
+                    // forgot why this is ok
                 }
             }
         }
@@ -423,7 +424,7 @@ class CFiles(private val app: JwtApplication) : WContainerWidget() {
             (if (includePls) Constants.soundFilePls else Constants.soundFile).matches(file.name) || (file.isDirectory && !file.name.startsWith("."))
         }
         if (cc == null) cc = arrayOf<File>()
-        cc = cc.sortedBy { a -> a.name.toLowerCase() }.toTypedArray()
+        cc = cc.sortedBy { a -> a.name.lowercase(Locale.getDefault()) }.toTypedArray()
         return cc.toList()
     }
 
