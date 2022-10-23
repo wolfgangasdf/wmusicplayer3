@@ -175,11 +175,13 @@ object MusicPlayer {
             val pw = java.io.PrintWriter(playlistFile)
             pw.write("[playlist]\nNumberOfEntries=" + cPlaylist.size + "\n")
             var iii = 1
-            for (it in cPlaylist) {
-                pw.write("File" + iii + "=" + it.name + "\n")
-                if (it.length > 0) pw.write("Length" + iii + "=" + it.length + "\n")
-                pw.write("Title" + iii + "=" + it.title + "\n")
-                iii += 1
+            synchronized(cPlaylist) {
+                for (it in cPlaylist) {
+                    pw.write("File" + iii + "=" + it.name + "\n")
+                    if (it.length > 0) pw.write("Length" + iii + "=" + it.length + "\n")
+                    pw.write("Title" + iii + "=" + it.title + "\n")
+                    iii += 1
+                }
             }
             pw.close()
         }

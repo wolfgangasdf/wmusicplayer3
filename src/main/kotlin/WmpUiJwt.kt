@@ -170,7 +170,6 @@ class ModelFiles : WAbstractTableModel() {
     override fun getColumnCount(parent: WModelIndex?): Int = if (parent == null) 1 else 0
 
     init {
-        @Suppress("RedundantLambdaArrow")
         lfiles.addListener { _: Observable ->
             modelReset().trigger()
         }
@@ -180,13 +179,16 @@ class ModelFiles : WAbstractTableModel() {
 class CPlayer(app: JwtApplication) : WContainerWidget() {
     private val lplayer = WVBoxLayout()
     private val btplay = KWPushButton("►", "Toggle play/pause") { MusicPlayer.dotoggle() }
+    var sliderGotValue = false
     private val slider = kJwtGeneric( { WSlider() }, {
-        isNativeControl = true // doesn't work if not!
+        isNativeControl = false // otherwise update loop
         tickPosition = WSlider.NoTicks
         height = btplay.height
         width = WLength("10%")
         valueChanged().addListener(this) { i ->
-            MusicPlayer.skipTo(i.toDouble())
+            if (sliderGotValue) { // otherwise skips on reload
+                MusicPlayer.skipTo(i.toDouble())
+            }
         }
     })
     private val volume = WText("100", TextFormat.Plain).apply { id = "volume" }
@@ -253,6 +255,7 @@ class CPlayer(app: JwtApplication) : WContainerWidget() {
         bindprop2widget(app, MusicPlayer.pTimePos) { _, newv ->
             timecurr.setText(getMinutes(newv.toInt()))
             slider.value = newv.toInt()
+            sliderGotValue = true
         }
         bindprop2widget(app, MusicPlayer.pTimeLen) { _, newv ->
             timelen.setText(getMinutes(newv.toInt()))

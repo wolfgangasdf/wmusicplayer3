@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-val kotlinversion = "1.6.10"
-val javaversion = 17
+val kotlinversion = "1.7.20"
+val javaversion = 18
 
 group = "com.wolle"
 version = ""
@@ -17,11 +17,11 @@ buildscript {
 }
 
 plugins {
-    kotlin("jvm") version "1.6.10"
+    kotlin("jvm") version "1.7.20"
     id("idea")
     application
-    id("org.openjfx.javafxplugin") version "0.0.10"
-    id("com.github.ben-manes.versions") version "0.39.0"
+    id("org.openjfx.javafxplugin") version "0.0.13"
+    id("com.github.ben-manes.versions") version "0.43.0"
     id("org.beryx.runtime") version "1.12.7"
 }
 
@@ -30,6 +30,13 @@ application {
     //defaultTasks = tasks.run
     applicationDefaultJvmArgs = listOf("-Dprism.verbose=true", "-Dprism.order=sw", // use software renderer
     	"-Dorg.eclipse.jetty.server.Request.maxFormKeys=2000")
+}
+
+idea {
+    module {
+        isDownloadSources = true
+        isDownloadJavadoc = true
+    }
 }
 
 runtime {
@@ -63,18 +70,18 @@ val javaFXOptions = the<org.openjfx.gradle.JavaFXOptions>()
 dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib:$kotlinversion")
     implementation("org.jetbrains.kotlin:kotlin-reflect:$kotlinversion")
-    implementation("io.github.microutils:kotlin-logging:2.1.21")
-    implementation("org.slf4j:slf4j-simple:1.8.0-beta4") // no colors, everything stderr
-    implementation("org.eclipse.jetty:jetty-server:9.4.44.v20210927") // don't upgrade to >9, jwt needs servlet 3 container
-    implementation("org.eclipse.jetty:jetty-servlet:9.4.44.v20210927")
+    implementation("io.github.microutils:kotlin-logging:3.0.2")
+    implementation("org.slf4j:slf4j-simple:2.0.3") // no colors, everything stderr
+    implementation("org.eclipse.jetty:jetty-server:9.4.49.v20220914") // don't upgrade to >9, jwt needs servlet 3 container
+    implementation("org.eclipse.jetty:jetty-servlet:9.4.49.v20220914")
 
     // jwt
-    implementation("com.github.emweb:jwt:4.5.1") // 4.6.0 has slider issue https://jitpack.io/#emweb/jwt
-    implementation("com.google.code.gson:gson:2.8.9") // otherwise, error with slider if opened with mac dashboard
+    implementation("com.github.emweb:jwt:4.8.1") // https://jitpack.io/#emweb/jwt
+    implementation("com.google.code.gson:gson:2.9.1") // otherwise, error with slider if opened with mac dashboard
     implementation("commons-fileupload:commons-fileupload:1.4") // needed for jwt, bug?
 
     // kotlinx.html
-    implementation("org.jetbrains.kotlinx:kotlinx-html-jvm:0.7.3")  {
+    implementation("org.jetbrains.kotlinx:kotlinx-html-jvm:0.8.0")  {
         exclude("org.jetbrains.kotlin", "kotlin-stdlib-jdk8")
     }
 
@@ -82,7 +89,7 @@ dependencies {
     implementation("com.github.olegcherr:Aza-Kotlin-CSS:d152fc49ab")
 
     // sound
-    implementation("uk.co.caprica:vlcj:4.7.1")
+    implementation("uk.co.caprica:vlcj:4.8.2")
 
     // media info
     implementation("org.bitbucket.ijabz:jaudiotagger:3.0.1") // https://jitpack.io/#org.bitbucket.ijabz/jaudiotagger
