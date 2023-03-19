@@ -138,13 +138,13 @@ class ModelPlaylist(private val app: WApplication) : WAbstractTableModel() {
         tt = timerTask {
             MusicPlayer.updateCurrentPlaylistItem() // not nice, should be inside MP
             doUI(app) { modelReset().trigger() }
-            logger.debug("resetting modelplaylist done! ${Thread.currentThread().id}")
+            logger.debug("resetting modelplaylist done! ${Thread.currentThread().threadId()}")
         }
         Timer().schedule(tt, 500)
     }
 
     init {
-        logger.debug("initialize ModelPlaylist...: " + WApplication.getInstance().sessionId + " threadid: " + Thread.currentThread().id)
+        logger.debug("initialize ModelPlaylist...: " + WApplication.getInstance().sessionId + " threadid: " + Thread.currentThread().threadId())
         MusicPlayer.cPlaylist.addListener(ListChangeListener { resetModelDelayed() })
     }
 
@@ -179,7 +179,7 @@ class ModelFiles : WAbstractTableModel() {
 class CPlayer(app: JwtApplication) : WContainerWidget() {
     private val lplayer = WVBoxLayout()
     private val btplay = KWPushButton("►", "Toggle play/pause") { MusicPlayer.dotoggle() }
-    var sliderGotValue = false
+    private var sliderGotValue = false
     private val slider = kJwtGeneric( { WSlider() }, {
         isNativeControl = false // otherwise update loop
         tickPosition = WSlider.NoTicks
@@ -527,12 +527,12 @@ class JwtApplication(env: WEnvironment, val isMobile: Boolean) : WApplication(en
     private val cfiles = CFiles(this).apply { id = "cfiles" }
 
     override fun quit() {
-        logger.debug("quit application thread=${Thread.currentThread().id} agent=${environment.agent}")
+        logger.debug("quit application thread=${Thread.currentThread().threadId()} agent=${environment.agent}")
         super.quit()
     }
 
     init {
-        logger.info("initialize Application sid=${getInstance().sessionId} thread=${Thread.currentThread().id} agent=${env.agent}")
+        logger.info("initialize Application sid=${getInstance().sessionId} thread=${Thread.currentThread().threadId()} agent=${env.agent}")
 
         setTitle("WMP") // also web app name
 
@@ -592,9 +592,9 @@ class JwtApplication(env: WEnvironment, val isMobile: Boolean) : WApplication(en
         // init stuff after shown
         val app = this
         Timer().schedule(timerTask { // ugly hack, but I can't find another way.
-            logger.debug("resetting modelplaylist... ${Thread.currentThread().id}")
+            logger.debug("resetting modelplaylist... ${Thread.currentThread().threadId()}")
             doUI(app) { cplaylist.scrollToCurrent() }
-            logger.debug("resetting modelplaylist done! ${Thread.currentThread().id}")
+            logger.debug("resetting modelplaylist done! ${Thread.currentThread().threadId()}")
         }, 1000)
     }
 }

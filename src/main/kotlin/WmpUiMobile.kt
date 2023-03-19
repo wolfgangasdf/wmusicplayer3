@@ -106,9 +106,10 @@ class KotlinxHtmlServlet : HttpServlet() {
                 link(rel = "shortcut icon", href="/res/favicon.ico")
             }
             body {
+                onLoad = """setTimeout("location.reload(true);",5000);"""
                 h1 { +"wmusicplayer" }
                 form(action = "/mobile", method = FormMethod.get) {
-                    onSubmit = "setTimeout(function() { window.location.reload(); }, 5)" // browser reload without Post/Redirect/Get
+                    onSubmit = "setTimeout(function() { window.location.reload(); }, 250)" // browser reload without Post/Redirect/Get
                     target = "myiframe" // to avoid redirect at post, but uses deprecated "target".
                     p {
                         input(name="action", type=InputType.submit, classes = "button" ) { value="prev" }
