@@ -15,12 +15,14 @@ private val logger = KotlinLogging.logger {}
 class KotlinxHtmlServlet : HttpServlet() {
     private val colBackground = "#B0B0B0"
     private val homescreenName = "WMP Mobile"
+    private val submitreloadtimeout = 500 // TODO remove all stuff since this is useless, submit reloads page???
 
     override fun doGet(request: HttpServletRequest?, response: HttpServletResponse?) {
         val playlab = if (MusicPlayer.dogetPlaying()) "pause" else "play"
         val volume = "%02d".format(MusicPlayer.pVolume.value)
         val currentsong = MusicPlayer.pCurrentSong.value
         val currentfile = MusicPlayer.pCurrentFile.value
+        fun getReloadJS(timeout: Int) = "setTimeout(function() { if (navigator.onLine) { window.location.reload(); } }, $timeout)"
 
         // respond to form submit
         if (request != null) {
@@ -86,7 +88,6 @@ class KotlinxHtmlServlet : HttpServlet() {
                 overflow = AUTO
             }
         }
-
         response!!.contentType = "text/html"
         response.writer.appendHTML(true).html {
             head {
@@ -106,10 +107,10 @@ class KotlinxHtmlServlet : HttpServlet() {
                 link(rel = "shortcut icon", href="/res/favicon.ico")
             }
             body {
-                onLoad = """setTimeout("location.reload(true);",5000);"""
+//                onLoad = getReloadJS(reloadtimeout)
                 h1 { +"wmusicplayer" }
                 form(action = "/mobile", method = FormMethod.get) {
-                    onSubmit = "setTimeout(function() { window.location.reload(); }, 250)" // browser reload without Post/Redirect/Get
+                    onSubmit = getReloadJS(submitreloadtimeout) // browser reload without Post/Redirect/Get
                     target = "myiframe" // to avoid redirect at post, but uses deprecated "target".
                     p {
                         input(name="action", type=InputType.submit, classes = "button" ) { value="prev" }
