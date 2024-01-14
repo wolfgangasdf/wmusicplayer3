@@ -5,8 +5,8 @@ import java.util.*
 group = "com.wolle"
 version = "1.0-SNAPSHOT"
 val cPlatforms = listOf("mac", "linux", "win") // compile for these platforms. "mac", "mac-aarch64", "linux", "win"
-val kotlinversion = "1.8.10"
-val javaVersion = 19
+val kotlinversion = "1.9.22"
+val javaVersion = 21
 println("Current Java version: ${JavaVersion.current()}")
 if (JavaVersion.current().majorVersion.toInt() != javaVersion) throw GradleException("Use Java $javaVersion")
 
@@ -17,11 +17,11 @@ buildscript {
 }
 
 plugins {
-    kotlin("jvm") version "1.8.10"
+    kotlin("jvm") version "1.9.22"
     id("idea")
     application
-    id("org.openjfx.javafxplugin") version "0.0.13"
-    id("com.github.ben-manes.versions") version "0.44.0"
+    id("org.openjfx.javafxplugin") version "0.0.14"
+    id("com.github.ben-manes.versions") version "0.47.0"
     id("org.beryx.runtime") version "1.13.0"
 }
 
@@ -48,7 +48,7 @@ repositories {
         setUrl("https://jitpack.io")
         content {
             includeModule("org.bitbucket.ijabz", "jaudiotagger")
-            includeModule("com.github.emweb", "jwt")
+            includeModule("com.github.wolfgangasdf", "jwt")
             includeModule("com.github.olegcherr", "Aza-Kotlin-CSS")
         }
     }
@@ -68,17 +68,17 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib:$kotlinversion")
     implementation("org.jetbrains.kotlin:kotlin-reflect:$kotlinversion")
     implementation("io.github.microutils:kotlin-logging:3.0.5")
-    implementation("org.slf4j:slf4j-simple:2.0.7") // no colors, everything stderr
-    implementation("org.eclipse.jetty:jetty-server:9.4.49.v20220914") // don't upgrade to >9, jwt needs servlet 3 container
-    implementation("org.eclipse.jetty:jetty-servlet:9.4.49.v20220914")
+    implementation("org.slf4j:slf4j-simple:2.0.11") // no colors, everything stderr
+    implementation("org.eclipse.jetty:jetty-server:9.4.53.v20231009") // using servlet 4 with jwt 4.10
+    implementation("org.eclipse.jetty:jetty-servlet:9.4.53.v20231009")
 
     // jwt
-    implementation("com.github.emweb:jwt:4.8.2") // https://jitpack.io/#emweb/jwt
+    implementation("com.github.wolfgangasdf:jwt:4.10.3") // https://jitpack.io/#wolfgangasdf/jwt
     implementation("com.google.code.gson:gson:2.10.1") // otherwise, error with slider if opened with mac dashboard
     implementation("commons-fileupload:commons-fileupload:1.5") // needed for jwt, bug?
 
     // kotlinx.html
-    implementation("org.jetbrains.kotlinx:kotlinx-html-jvm:0.8.0")  {
+    implementation("org.jetbrains.kotlinx:kotlinx-html-jvm:0.10.1")  {
         exclude("org.jetbrains.kotlin", "kotlin-stdlib-jdk8")
     }
 
