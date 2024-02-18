@@ -5,7 +5,7 @@ import mu.KotlinLogging
 import java.io.BufferedReader
 import java.io.File
 import java.io.FileReader
-import java.net.URL
+import java.net.URI
 
 
 /*
@@ -86,7 +86,7 @@ object MusicPlayer {
             val f2 = uri.replace("file://","")
             loadPlaylist(f2, clearPlayListIfPls)
         } else if (soundFileUri.matches(uri)) {
-            val url = URL(uri)
+            val url = URI(uri).toURL()
             var tit = title
             var le = length?.toInt() ?: -1
             if (url.protocol == "file" && (length == null || title == null)) {

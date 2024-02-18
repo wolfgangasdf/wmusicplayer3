@@ -8,7 +8,7 @@ import uk.co.caprica.vlcj.player.base.MediaPlayer
 import uk.co.caprica.vlcj.player.base.MediaPlayerEventAdapter
 import uk.co.caprica.vlcj.player.component.AudioPlayerComponent
 import java.io.File
-import java.net.URL
+import java.net.URI
 
 private val logger = KotlinLogging.logger {}
 
@@ -130,7 +130,7 @@ object MusicPlayerBackend {
     fun dogetIsStream(): Boolean = isStream
 
     fun play(songurl: String) {
-        val url = URL(songurl)
+        val url = URI(songurl).toURL()
         isStream = url.protocol == "http"
         mp.submit { if (!mp.media().start(songurl)) {
             logger.error("Error starting song $songurl")
