@@ -619,7 +619,6 @@ class JwtServlet : WtServlet() {
         // need to define meta headers here (config) if not progressive bootstrap: https://redmine.webtoolkit.eu/boards/1/topics/14326
         configuration.metaHeaders.add(MetaHeader(MetaHeaderType.Meta, "viewport", metaViewport, "", ""))
         configuration.metaHeaders.add(MetaHeader(MetaHeaderType.Meta, "mobile-web-app-capable", "yes", "", ""))
-
         logger.info("servlet config: pbs:${configuration.progressiveBootstrap("/")} ua:${configuration.uaCompatible}")
         logger.info("servlet config: ${configuration.metaHeaders} x ${configuration.properties} y ${configuration.internalDeploymentSize()}")
         logger.info("jwt servlet initialized!")

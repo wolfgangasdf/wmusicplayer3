@@ -104,7 +104,9 @@ class KotlinxHtmlServlet : HttpServlet() {
                 meta("apple-mobile-web-app-capable", "yes")
                 meta("apple-mobile-web-app-status-bar-style", "black-translucent")
                 meta("apple-mobile-web-app-title", homescreenName)
-                link(rel = "shortcut icon", href="/res/favicon.ico")
+                link(rel = "apple-touch-icon", href="/res/favicon.svg")
+                link(rel = "icon", type = "image/svg+xml", href="/res/apple-touch-icon.png")
+                link(rel = "manifest", href="/res/site.webmanifest")
             }
             body {
 //                onLoad = getReloadJS(reloadtimeout)
