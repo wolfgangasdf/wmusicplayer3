@@ -6,6 +6,7 @@ import java.io.BufferedReader
 import java.io.File
 import java.io.FileReader
 import java.net.URI
+import java.nio.file.Paths
 
 
 /*
@@ -24,7 +25,7 @@ object Constants {
     val soundFile = """([^.].*\.($audiofileexts))""".toRegex()
 }
 
-class PlaylistItem(var name: String, var title: String, var length: Int)
+class PlaylistItem(var uri: URI, var title: String, var length: Int)
 
 private val logger = KotlinLogging.logger {}
 
@@ -81,17 +82,16 @@ object MusicPlayer {
         return (MusicPlayerBackend.dogetPlaying() && !MusicPlayerBackend.dogetPause())
     }
 
-    fun addToPlaylist(uri: String, beforeId: PlaylistItem? = null, clearPlayListIfPls: Boolean, title: String? = null, length: String? = null) {
-        if (uri.endsWith(".pls")) {
-            val f2 = uri.replace("file://","")
-            loadPlaylist(f2, clearPlayListIfPls)
-        } else if (soundFileUri.matches(uri)) {
-            val url = URI(uri).toURL()
+    fun addToPlaylist(uri: URI, beforeId: PlaylistItem? = null, clearPlayListIfPls: Boolean, title: String? = null, length: String? = null) {
+        if (uri.path.endsWith(".pls")) {
+            loadPlaylist(File(uri), clearPlayListIfPls)
+        } else if (soundFileUri.matches(uri.toString())) {
+            val url = uri.toURL()
             var tit = title
             var le = length?.toInt() ?: -1
             if (url.protocol == "file" && (length == null || title == null)) {
                 // only parse if title/length unknown
-                val (au2, al2, ti2, le2, tit2) = MusicPlayerBackend.parseSong(uri)
+                val (au2, al2, ti2, le2, tit2) = MusicPlayerBackend.parseSong(File(uri))
                 tit = tit2
                 if (au2 != "" && ti2 != "") tit = listOf(au2, al2, ti2).asSequence().filter{ p -> p != ""}.joinToString(" - ")
                 le = le2
@@ -100,7 +100,7 @@ object MusicPlayer {
                 if (tit.startsWith("/")) tit = tit.substring(1)
             }
             logger.debug("adding: uri=$uri tit=$tit le=$le")
-            val newitem = PlaylistItem(uri, tit ?: uri, le)
+            val newitem = PlaylistItem(uri, tit ?: uri.toString(), le)
             if (beforeId == null)
                 cPlaylist += newitem
             else {
@@ -109,9 +109,13 @@ object MusicPlayer {
         }
     }
 
-    fun loadPlaylist(file: String, clearPlayList: Boolean) {
-        val f = File(file)
-        if (f.exists()) {
+    fun loadPlaylist(f: File, clearPlayList: Boolean) {
+        if (!f.exists()) {
+            logger.error("loadplaylist: file does not exist: $f")
+            return
+        }
+        try {
+            logger.debug("loadplaylist $f")
             if (clearPlayList) cPlaylist.clear()
             val inp = BufferedReader(FileReader(f))
             val numberTag = """numberofentries=(.*)""".toRegex(RegexOption.IGNORE_CASE)
@@ -119,7 +123,7 @@ object MusicPlayer {
             val titleTag = """title([0-9]+)=(.*)""".toRegex(RegexOption.IGNORE_CASE)
             val lengthTag = """length([0-9]+)=(.*)""".toRegex(RegexOption.IGNORE_CASE)
             var nume = -1
-            val files = HashMap<Int, String>()
+            val uris = HashMap<Int, URI>()
             val titles = HashMap<Int, String>()
             val lengths = HashMap<Int, String>()
             while (inp.ready()) {
@@ -129,27 +133,40 @@ object MusicPlayer {
                         s.matches(numberTag) -> {
                             nume = numberTag.matchEntire(s)!!.groupValues[1].toInt()
                         }
+
                         s.matches(fileTag) -> {
                             val ss = fileTag.matchEntire(s)!!.groupValues
-                            files[ss[1].toInt()] = ss[2]
+                            uris[ss[1].toInt()] = if (ss[2].startsWith("..")) { // resolve relative paths
+                                f.toPath().parent.resolve(ss[2]).normalize().toUri()
+                            } else if (ss[2].startsWith("file:///")) { // file:///... URI old versions wmp
+                                File(ss[2].substring(7)).toURI()
+                            } else if (ss[2].startsWith("/")) // absolute path
+                                File(ss[2]).toURI()
+                            else URI(ss[2]) // stream etc
                         }
+
                         s.matches(titleTag) -> {
                             val ss = titleTag.matchEntire(s)!!.groupValues
                             titles[ss[1].toInt()] = ss[2]
                         }
+
                         s.matches(lengthTag) -> {
                             val ss = lengthTag.matchEntire(s)!!.groupValues
                             lengths[ss[1].toInt()] = ss[2]
                         }
+
                         else -> logger.warn("not found: <$s>")
                     }
                 }
             }
             for (iii in 1..nume) {
-                addToPlaylist(files[iii]!!, null, false, titles[iii], lengths[iii])
+                addToPlaylist(uris[iii]!!, null, false, titles[iii], lengths[iii])
             }
             inp.close()
             setPlaylistVars(f)
+        } catch(e: Exception) {
+            e.printStackTrace()
+            logger.error("loadplaylist: exception: $e")
         }
     }
 
@@ -167,19 +184,23 @@ object MusicPlayer {
 
     private fun playlistFileFromName(plname: String) = File(Settings.playlistFolder + "/" + plname + ".pls")
 
+    // pls fileformat compatible with VLC etc. - unencoded filenames, relative paths to playlist file
     private fun savePlaylist() {
         if (pPlaylistName.value != "") {
             val playlistFile = playlistFileFromName(pPlaylistName.value)
             logger.info("saving to playlist ${playlistFile.path}")
             if (playlistFile.exists()) playlistFile.delete()
             val pw = java.io.PrintWriter(playlistFile)
-            pw.write("[playlist]\nNumberOfEntries=" + cPlaylist.size + "\n")
+            pw.write("[playlist]\nNumberOfEntries=${cPlaylist.size}\n")
             var iii = 1
             synchronized(cPlaylist) {
                 for (it in cPlaylist) {
-                    pw.write("File" + iii + "=" + it.name + "\n")
-                    if (it.length > 0) pw.write("Length" + iii + "=" + it.length + "\n")
-                    pw.write("Title" + iii + "=" + it.title + "\n")
+                    val s = if (it.uri.scheme == "file") {
+                        playlistFile.toPath().parent.relativize(Paths.get(it.uri)).toString()
+                    } else it.uri.toString()
+                    pw.write("File$iii=$s\n")
+                    if (it.length > 0) pw.write("Length$iii=${it.length}\n")
+                    pw.write("Title$iii=${it.title}\n")
                     iii += 1
                 }
             }
@@ -208,8 +229,8 @@ object MusicPlayer {
 
     fun getMixers() = MusicPlayerBackend.dogetMixers()
     fun updateMixer() {
-        logger.info("updateMixer: using <${Settings.mixer}>")
-        MusicPlayerBackend.setMixer(Settings.mixer)
+        logger.info("updateMixer: using <${Settings.audioDevice}>")
+        MusicPlayerBackend.setMixer(Settings.audioDevice)
     }
 
     fun playNext() {
@@ -251,8 +272,9 @@ object MusicPlayer {
         }
         logger.debug("playsong $pCurrentPlaylistIdx")
         currentPlaylistItem = getCurrentPlaylistItem()
-        val currfile = if (currentPlaylistItem == null) "" else currentPlaylistItem!!.name
-        MusicPlayerBackend.play(currentPlaylistItem!!.name)
+        val currfile = if (currentPlaylistItem == null) "" else currentPlaylistItem!!.uri.toString()
+        logger.debug("playsong name=${currentPlaylistItem!!.uri}")
+        MusicPlayerBackend.play(currentPlaylistItem!!.uri)
         updateVolume()
         pCurrentFile.value = currfile
     }
@@ -288,7 +310,7 @@ object MusicPlayer {
 
         // load playlist
         MusicPlayerBackend.dogetMixers()
-        loadPlaylist(Settings.playlistDefault, true)
+        loadPlaylist(File(Settings.playlistDefault), true)
         updateMixer()
     }
 }

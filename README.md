@@ -22,7 +22,7 @@ Notes
 
 * Audio device selection works only after some music has been played.
 * There is no authentication or other protection, use it only on private LANs.
-* Only mac is tested continuously, but it should run on win & linux, too.
+* Should run on linux/mac, possibly on windows.
 * Before commit [3083d69](https://github.com/wolfgangasdf/wmusicplayer3/commit/3083d69f380379731b4d52e400d82464bc925a60) it did contain a pure-java skip-free music player (flac, mp3, ogg,...), but AAC didn't work, and because of lack of time, I switched to VLC.
 
 # How to use

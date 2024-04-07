@@ -5,6 +5,7 @@ import azadev.kotlin.css.dimens.px
 import kotlinx.html.*
 import kotlinx.html.stream.appendHTML
 import mu.KotlinLogging
+import java.io.File
 import javax.servlet.http.HttpServlet
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
@@ -43,7 +44,7 @@ class KotlinxHtmlServlet : HttpServlet() {
             }
             val quickpls = request.parameterNames.toList().find { pn -> pn.startsWith("pls-") }
             if (quickpls != null) {
-                MusicPlayer.loadPlaylist(Settings.bQuickPls[quickpls.replace("pls-", "").toInt()], true)
+                MusicPlayer.loadPlaylist(File(Settings.bQuickPls[quickpls.replace("pls-", "").toInt()]), true)
                 MusicPlayer.playFirst()
             }
         }

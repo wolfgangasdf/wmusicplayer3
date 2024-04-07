@@ -1,5 +1,6 @@
 import mu.KotlinLogging
 import java.io.File
+import java.net.URI
 import javax.sound.sampled.AudioFormat
 import javax.sound.sampled.AudioSystem
 import javax.sound.sampled.DataLine
@@ -68,6 +69,7 @@ object TestFlac {
     }
 }
 
+/*
 @Suppress("unused")
 object TestBackend {
 
@@ -133,6 +135,7 @@ object TestBackend {
 
     }
 }
+*/
 
 
 @Suppress("unused")
@@ -140,7 +143,7 @@ object TestStream {
     fun main() {
 //        val url = "http://ice.somafm.com/groovesalad"
 //        val url = "http://ice1.somafm.com/deepspaceone-128-mp3"
-    val url = "http://listen.radionomy.com/ABC-Lounge" // from shoutcast.com
+    val url = URI("http://listen.radionomy.com/ABC-Lounge") // from shoutcast.com
         print("play res = " + MusicPlayerBackend.play(url))
         while (MusicPlayerBackend.dogetPlaying()) {
             println("playing...")
@@ -154,7 +157,7 @@ object TestStreamSkipping {
     fun main() {
 //        val url = "http://ice.somafm.com/groovesalad"
 //        val url = "http://ice1.somafm.com/deepspaceone-128-mp3"
-        val url = "http://listen.radionomy.com/ABC-Lounge" // from shoutcast.com
+        val url = URI("http://listen.radionomy.com/ABC-Lounge") // from shoutcast.com
         println("play res = " + MusicPlayerBackend.play(url))
         Thread.sleep(2000)
         println("playing: ${MusicPlayerBackend.dogetPlaying()}")

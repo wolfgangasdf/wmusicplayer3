@@ -4,6 +4,7 @@ import javafx.collections.FXCollections
 import javafx.collections.ListChangeListener
 import mu.KotlinLogging
 import java.io.File
+import java.net.URI
 import java.nio.file.ClosedWatchServiceException
 import java.nio.file.Path
 import java.nio.file.StandardWatchEventKinds
@@ -26,8 +27,9 @@ class SettingsWindow : WDialog("Settings") {
     private val mixers = MusicPlayer.getMixers()
     private val sbmixer = kJwtGeneric({ WSelectionBox() }) {
         for (mix in mixers) addItem(mix)
-        if (mixers.contains(Settings.mixer)) currentIndex = mixers.indexOf(Settings.mixer)
+        if (mixers.contains(Settings.audioDevice)) currentIndex = mixers.indexOf(Settings.audioDevice)
         setMargin(WLength(10.0), EnumSet.of(Side.Right))
+        setMaximumSize(WLength(700.0), WLength(500.0))
     }
     private val lePort = kJwtGeneric({ WLineEdit()}) {
         text = Settings.port.toString()
@@ -36,7 +38,7 @@ class SettingsWindow : WDialog("Settings") {
         isModal = true
         contents.layout = layout
         footer.addWidget(KWPushButton("OK", "Save settings") {
-            Settings.mixer = sbmixer.currentText.toString()
+            Settings.audioDevice = sbmixer.currentText.toString()
             Settings.port = lePort.text.toString().toInt()
             Settings.save()
             MusicPlayer.updateMixer()
@@ -67,7 +69,7 @@ class AddURLWindow : WDialog("Add stream URL...") {
         contents.layout = layout
         footer.addWidget(KWPushButton("OK", "Add URL to playlist") {
             if (leUrl.text.startsWith("http")) {
-                MusicPlayer.addToPlaylist(leUrl.text, null, false, title = leTitle.text)
+                MusicPlayer.addToPlaylist(URI(leUrl.text), null, false, title = leTitle.text)
             }
             accept()
         })
@@ -88,10 +90,10 @@ class EditPLSentry(index: Int?) : WDialog("Edit playlist entry...") {
         contents.layout = layout
         if (index != null) {
             val pli = MusicPlayer.cPlaylist[index]
-            leURI.text = pli.name
+            leURI.text = pli.uri.toString()
             leTitle.text = pli.title
             footer.addWidget(KWPushButton("Update", "") {
-                pli.name = leURI.text
+                pli.uri = URI(leURI.text)
                 pli.title = leTitle.text
                 MusicPlayer.cPlaylist[index] = pli
                 accept()
@@ -99,7 +101,7 @@ class EditPLSentry(index: Int?) : WDialog("Edit playlist entry...") {
         }
         width = WLength(350.0)
         footer.addWidget(KWPushButton("Add entry", "") {
-            MusicPlayer.addToPlaylist(leURI.text, title = leTitle.text, clearPlayListIfPls = false)
+            MusicPlayer.addToPlaylist(URI(leURI.text), title = leTitle.text, clearPlayListIfPls = false)
             accept()
         })
         footer.addWidget(KWPushButton("Cancel", "") { reject() })
@@ -199,7 +201,7 @@ class CPlayer(app: JwtApplication) : WContainerWidget() {
     private val codecInfo = WText("codecinfo", TextFormat.Plain).apply { id = "codecInfo" }
     private val quickbtns = Array(Constants.NQUICKPLS) { i -> KWPushButton(Settings.getplscap(i), "Load Playlist $i") {
         if (bquickedit.text.value == "✏️") {
-            MusicPlayer.loadPlaylist(Settings.bQuickPls[i], true)
+            MusicPlayer.loadPlaylist(File(Settings.bQuickPls[i]), true)
             MusicPlayer.playFirst()
         } else {
             Settings.bQuickPls[i] = MusicPlayer.pPlaylistFile.value
@@ -467,7 +469,7 @@ class CFiles(private val app: JwtApplication) : WContainerWidget() {
 
     private fun addFileToPlaylist(f: File, clearPlayListIfPls: Boolean = false) {
         if (!f.isDirectory) {
-            MusicPlayer.addToPlaylist("file://" + f.path, null, clearPlayListIfPls)
+            MusicPlayer.addToPlaylist(f.toURI(), null, clearPlayListIfPls)
         }
     }
 

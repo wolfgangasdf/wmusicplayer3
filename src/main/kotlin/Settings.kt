@@ -15,7 +15,7 @@ object Settings {
     var playlistFolder = ""
     var recentDirs = Stack<String>()
     val bQuickPls = mutableListOf<String>()
-    var mixer = ""
+    var audioDevice = ""
 
     private var firstRun = false
     private val props = Properties()
@@ -38,10 +38,10 @@ object Settings {
         playlistDefault = props.getProperty("playlistdefault","")
         playlistFolder = props.getProperty("playlistfolder","")
         pCurrentFolder = props.getProperty("currentfolder","/")
-        mixer = props.getProperty("mixer","")
+        audioDevice = props.getProperty("mixer","")
         for (ii in 0 until Constants.NQUICKPLS) {
-        bQuickPls += props.getProperty("quickpls$ii", "")
-    }
+            bQuickPls += props.getProperty("quickpls$ii", "")
+        }
         MusicPlayer.updateVolume()
     }
 
@@ -54,7 +54,7 @@ object Settings {
             props["playlistdefault"] = playlistDefault
             props["playlistfolder"] = playlistFolder
             props["currentfolder"] = pCurrentFolder
-            props["mixer"] = mixer
+            props["mixer"] = audioDevice
             for (ii in 0 until Constants.NQUICKPLS) {
                 props["quickpls$ii"] = bQuickPls[ii]
             }

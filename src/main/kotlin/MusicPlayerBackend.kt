@@ -97,15 +97,17 @@ object MusicPlayerBackend {
 
     data class ParseSongResult(val au: String, val al: String, val ti: String, val le: Int, val tit: String)
 
-    fun parseSong(uri: String): ParseSongResult {
-        val tit = File(uri).name
-        val f = AudioFileIO.read(File(uri.removePrefix("file://")))
-        val tag = f.tag
+    fun parseSong(file: File): ParseSongResult {
+        val tit = file.name
+        var l = -1
         return try {
+            val f = AudioFileIO.read(file)
+            l = f.audioHeader.trackLength
+            val tag = f.tag
             ParseSongResult(tag.getFirst(FieldKey.ARTIST), tag.getFirst(FieldKey.ALBUM), tag.getFirst(FieldKey.TITLE),
-                    f.audioHeader.trackLength, tit) // tit is fallback-title (filename)
+                    l, tit) // tit is fallback-title (filename)
         } catch(e: Exception) {
-            ParseSongResult("", "", "", f.audioHeader.trackLength, tit)
+            ParseSongResult("", "", "", l, tit)
         }
     }
 
@@ -129,23 +131,50 @@ object MusicPlayerBackend {
     private var isStream = false
     fun dogetIsStream(): Boolean = isStream
 
-    fun play(songurl: String) {
-        val url = URI(songurl).toURL()
-        isStream = url.protocol == "http"
-        mp.submit { if (!mp.media().start(songurl)) {
-            logger.error("Error starting song $songurl")
-            onCompleted()
-        } }
+    fun play(songuri: URI) {
+        isStream = songuri.scheme.startsWith("http")
+        mp.submit {
+            if (!mp.media().start(getMrlString(songuri))) {
+                logger.error("Error starting song $songuri : ${getMrlString(songuri)}")
+                onCompleted()
+            }
+        }
     }
 
+    // to be used for vlcj
+    private fun getMrlString(uri: URI): String {
+        return if (uri.scheme == "file") "file:///" + File(uri).absolutePath else uri.toString()
+    }
+
+    // this is a mess with vlcj 4 / vlc 3, probably in future better
+    // on mac, have only useful mp.audio().outputDevices(), and on linux mpc.mediaPlayerFactory().audio().audioOutputs()
+    // for now, I use [output name|OD]|id|longname
     fun dogetMixers(): List<String> {
-        logger.debug("mix: ${mp.audio().outputDevices().joinToString(";") { it.toString() }}")
-        logger.debug("mix: ${mpc.mediaPlayerFactory().audio().audioOutputs().joinToString(";") { it.toString() }}")
-        return mp.audio().outputDevices().map { it.longName }
+        val res = arrayListOf<String>()
+        logger.debug("mix odevices: ")
+        mp.audio().outputDevices().forEach { od ->
+            logger.debug("MIX AUDIO OUTPUT device name=${od.longName} id=${od.deviceId}")
+            res += "OD|${od.deviceId}|${od.longName}"
+        }
+        logger.debug("mix factory devices : ")
+        mpc.mediaPlayerFactory().audio().audioOutputs().forEach { ao ->
+            logger.debug("AUDIO OUTPUT name = ${ao.name}")
+            ao.devices.forEach { d ->
+                logger.debug("   device id=${d.deviceId} name = ${d.longName}")
+                res += "${ao.name}|${d.deviceId}|${d.longName}"
+            }
+        }
+        return res
     }
     fun setMixer(mixer: String) {
-        val mid = mp.audio().outputDevices().find { it.longName == mixer }?.deviceId
-        mp.audio().setOutputDevice(null, mid) // output is NOT the device name, but "auhal" or so
+        val x = mixer.split("|")
+        if (x.size != 3) {
+            logger.info("not setting audio mixer, string wrong: $mixer")
+            return
+        }
+        val output = if (x[0] == "OD") null else x[0]
+        logger.debug("setmixer: output=$output mid=${x[1]} mixer=$mixer")
+        mp.audio().setOutputDevice(output, x[1]) // output is NOT the device name, but "auhal" or so
         mp.submit {
             mp.controls().stop()
         }
