@@ -58,7 +58,7 @@ object MusicPlayer {
     }
 
     fun dotoggle() {
-        logger.debug("dotoggle: ${dogetPlaying()}")
+        logger.debug("dotoggle: ${dogetPlaying()} AudioDevice: ${MusicPlayerBackend.getAudioDevice()}")
         if (dogetPlaying()) {
             if (MusicPlayerBackend.dogetIsStream()) {
                 logger.debug("dotoggle: stopping stream...")
@@ -209,6 +209,7 @@ object MusicPlayer {
     }
 
     fun updateVolume() { // 0..100
+        logger.debug("updateVolume: ${pVolume.value}")
         MusicPlayerBackend.setVolume(pVolume.value)
         Settings.save()
     }
@@ -227,10 +228,10 @@ object MusicPlayer {
         pCurrentSong.value = getCurrentPlaylistItem()?.title ?: ""
     }
 
-    fun getMixers() = MusicPlayerBackend.dogetMixers()
-    fun updateMixer() {
-        logger.info("updateMixer: using <${Settings.audioDevice}>")
-        MusicPlayerBackend.setMixer(Settings.audioDevice)
+    fun getAudioDevice() = MusicPlayerBackend.getAudioDevices()
+    fun updateAudioDevice() {
+        logger.info("updateAudioDevice: using <${Settings.audioDevice}>")
+        MusicPlayerBackend.setAudioDevice(Settings.audioDevice)
     }
 
     fun playNext() {
@@ -274,8 +275,9 @@ object MusicPlayer {
         currentPlaylistItem = getCurrentPlaylistItem()
         val currfile = if (currentPlaylistItem == null) "" else currentPlaylistItem!!.uri.toString()
         logger.debug("playsong name=${currentPlaylistItem!!.uri}")
+        updateAudioDevice()
         MusicPlayerBackend.play(currentPlaylistItem!!.uri)
-        updateVolume()
+        updateVolume() // TODO doesn't work, see audioDeviceChanged fix. https://stackoverflow.com/a/62356550
         pCurrentFile.value = currfile
     }
 
@@ -309,8 +311,8 @@ object MusicPlayer {
         }
 
         // load playlist
-        MusicPlayerBackend.dogetMixers()
+        MusicPlayerBackend.getAudioDevices()
         loadPlaylist(File(Settings.playlistDefault), true)
-        updateMixer()
+        updateAudioDevice()
     }
 }

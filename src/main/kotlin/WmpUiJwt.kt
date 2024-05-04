@@ -24,10 +24,10 @@ private fun getMinutes(secs: Int): String {
 
 class SettingsWindow : WDialog("Settings") {
     private val layout = WVBoxLayout()
-    private val mixers = MusicPlayer.getMixers()
-    private val sbmixer = kJwtGeneric({ WSelectionBox() }) {
-        for (mix in mixers) addItem(mix)
-        if (mixers.contains(Settings.audioDevice)) currentIndex = mixers.indexOf(Settings.audioDevice)
+    private val audioDevices = MusicPlayer.getAudioDevice()
+    private val sbAudio = kJwtGeneric({ WSelectionBox() }) {
+        for (ad in audioDevices) addItem(ad)
+        if (audioDevices.contains(Settings.audioDevice)) currentIndex = audioDevices.indexOf(Settings.audioDevice)
         setMargin(WLength(10.0), EnumSet.of(Side.Right))
         setMaximumSize(WLength(700.0), WLength(500.0))
     }
@@ -38,17 +38,17 @@ class SettingsWindow : WDialog("Settings") {
         isModal = true
         contents.layout = layout
         footer.addWidget(KWPushButton("OK", "Save settings") {
-            Settings.audioDevice = sbmixer.currentText.toString()
+            Settings.audioDevice = sbAudio.currentText.toString()
             Settings.port = lePort.text.toString().toInt()
             Settings.save()
-            MusicPlayer.updateMixer()
+            MusicPlayer.updateAudioDevice()
             accept()
         })
         footer.addWidget(KWPushButton("Cancel", "") { reject() })
 
         layout.addWidget(kJwtVBox(contents) {
-            addit(WLabel("Audio mixers:"))
-            addit(sbmixer)
+            addit(WLabel("Audio output devices:"))
+            addit(sbAudio)
         })
         layout.addWidget(KWPushButton("Reset playlist folder", "set again afterwards!") { Settings.playlistFolder = "" })
         layout.addWidget(kJwtHBox(contents) {

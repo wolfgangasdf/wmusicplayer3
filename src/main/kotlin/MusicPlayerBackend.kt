@@ -25,6 +25,7 @@ object MusicPlayerBackend {
     private val vmetadata = mutableMapOf<String, String>()
     private var vpaused = false
     private var vstopped = true
+    private var lastVolume: Int = 0
 
     private fun getMetadata(md: MetaData): Map<String, String> = md.values().mapKeys { it.key.name }
 
@@ -67,7 +68,7 @@ object MusicPlayerBackend {
             }
 
             override fun paused(mediaPlayer: MediaPlayer?) {
-                logger.debug("paused!")
+                logger.debug("mpc paused!")
                 vpaused = true
                 emitPlayingStateChanged()
             }
@@ -81,6 +82,16 @@ object MusicPlayerBackend {
             override fun mediaPlayerReady(mediaPlayer: MediaPlayer?) { logger.debug("mpc ready") }
 
             override fun lengthChanged(mediaPlayer: MediaPlayer?, newLength: Long) { logger.debug("mpc length $newLength") }
+
+            override fun volumeChanged(mediaPlayer: MediaPlayer?, volume: Float) {
+                logger.debug("mpc volumeChanged: $volume")
+            }
+
+            override fun audioDeviceChanged(mediaPlayer: MediaPlayer?, audioDevice: String?) {
+                logger.debug("mpc audioDeviceChanged: $audioDevice")
+                // somehow this is called after long sleep, then volume is reset to 0.5
+                setVolume(lastVolume) // fix set volume
+            }
 
             override fun error(mediaPlayer: MediaPlayer?) {
                 logger.error("mpc error!!!!")
@@ -146,38 +157,30 @@ object MusicPlayerBackend {
         return if (uri.scheme == "file") "file:///" + File(uri).absolutePath else uri.toString()
     }
 
-    // this is a mess with vlcj 4 / vlc 3, probably in future better
-    // on mac, have only useful mp.audio().outputDevices(), and on linux mpc.mediaPlayerFactory().audio().audioOutputs()
-    // for now, I use [output name|OD]|id|longname
-    fun dogetMixers(): List<String> {
+    fun getAudioDevices(): List<String> {
         val res = arrayListOf<String>()
-        logger.debug("mix odevices: ")
+        logger.debug("getAudioDevices: ")
         mp.audio().outputDevices().forEach { od ->
-            logger.debug("MIX AUDIO OUTPUT device name=${od.longName} id=${od.deviceId}")
-            res += "OD|${od.deviceId}|${od.longName}"
-        }
-        logger.debug("mix factory devices : ")
-        mpc.mediaPlayerFactory().audio().audioOutputs().forEach { ao ->
-            logger.debug("AUDIO OUTPUT name = ${ao.name}")
-            ao.devices.forEach { d ->
-                logger.debug("   device id=${d.deviceId} name = ${d.longName}")
-                res += "${ao.name}|${d.deviceId}|${d.longName}"
-            }
+            logger.debug("  outputDevice name=${od.longName} id=${od.deviceId} tostring=$od")
+            res += "${od.longName}|${od.deviceId}"
         }
         return res
     }
-    fun setMixer(mixer: String) {
-        val x = mixer.split("|")
-        if (x.size != 3) {
-            logger.info("not setting audio mixer, string wrong: $mixer")
+    fun setAudioDevice(device: String) {
+        logger.debug("setAudioDevice: $device")
+        val x = device.split("|")
+        if (x.size != 2) {
+            logger.info("not setting audio device, string wrong: $device")
             return
         }
-        val output = if (x[0] == "OD") null else x[0]
-        logger.debug("setmixer: output=$output mid=${x[1]} mixer=$mixer")
-        mp.audio().setOutputDevice(output, x[1]) // output is NOT the device name, but "auhal" or so
+        mp.audio().setOutputDevice(x[0], x[1])
         mp.submit {
             mp.controls().stop()
         }
+    }
+
+    fun getAudioDevice() : String? {
+        return mp.audio().outputDevice()
     }
 
     fun emitPlayingStateChanged() {
@@ -201,6 +204,7 @@ object MusicPlayerBackend {
     }
     fun setVolume(vol: Int) {
         logger.debug("set vol $vol")
+        lastVolume = vol
         mp.submit { mp.audio().setVolume(vol) }
     }
     fun dogetMediaInfo(): String {
@@ -212,6 +216,8 @@ object MusicPlayerBackend {
     }
 
     init {
+//        mpc.mediaPlayerFactory().application().setApplicationId("wmusicplayer", "0.1", "")
+        mpc.mediaPlayerFactory().application().setUserAgent("wmusicplayer (vlcj)") // name in audio mixers
         iniCallbacks()
     }
 }

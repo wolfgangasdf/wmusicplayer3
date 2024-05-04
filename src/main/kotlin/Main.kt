@@ -9,11 +9,12 @@ const val metaViewport = "user-scalable=no, initial-scale=1, maximum-scale=1, mi
 
 fun main() {
 
-    System.setProperty("jna.encoding", "UTF8");
+    System.setProperty("jna.encoding", "UTF8")
+    System.setProperty("org.slf4j.simpleLogger.showDateTime", "true")
+    System.setProperty("org.slf4j.simpleLogger.dateTimeFormat", "yyyyMMdd-HH:mm:ss")
     System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "TRACE")
     System.setProperty("org.slf4j.simpleLogger.log.org.eclipse.jetty", "INFO")
     System.setProperty("org.slf4j.simpleLogger.log.eu.webtoolkit.jwt", "INFO")
-
     val logger = KotlinLogging.logger {} // after set properties!
 
     logger.info("info")

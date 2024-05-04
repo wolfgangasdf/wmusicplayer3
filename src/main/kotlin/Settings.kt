@@ -38,7 +38,7 @@ object Settings {
         playlistDefault = props.getProperty("playlistdefault","")
         playlistFolder = props.getProperty("playlistfolder","")
         pCurrentFolder = props.getProperty("currentfolder","/")
-        audioDevice = props.getProperty("mixer","")
+        audioDevice = props.getProperty("audiodevice","")
         for (ii in 0 until Constants.NQUICKPLS) {
             bQuickPls += props.getProperty("quickpls$ii", "")
         }
@@ -54,7 +54,7 @@ object Settings {
             props["playlistdefault"] = playlistDefault
             props["playlistfolder"] = playlistFolder
             props["currentfolder"] = pCurrentFolder
-            props["mixer"] = audioDevice
+            props["audiodevice"] = audioDevice
             for (ii in 0 until Constants.NQUICKPLS) {
                 props["quickpls$ii"] = bQuickPls[ii]
             }
