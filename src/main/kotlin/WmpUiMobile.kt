@@ -98,21 +98,20 @@ class KotlinxHtmlServlet : HttpServlet() {
                         raw(css.render())
                     }
                 }
+                link(rel = "apple-touch-icon", href="/res/apple-touch-icon.png")
+                link(rel = "icon", type = "image/png", href="/res/apple-touch-icon.png")
+                link(rel = "manifest", href="/res/webmanifest.json")
                 meta("viewport", metaViewport)
-                meta("mobile-web-app-capable", "yes")
                 meta("theme-color", colBackground) // android
-                meta("application-name", homescreenName)
+                meta("application-name", homescreenName) // android
                 meta("apple-mobile-web-app-capable", "yes")
-                meta("apple-mobile-web-app-status-bar-style", "black-translucent")
+                meta("apple-mobile-web-app-status-bar-style", "black")
                 meta("apple-mobile-web-app-title", homescreenName)
-                link(rel = "apple-touch-icon", href="/res/favicon.svg")
-                link(rel = "icon", type = "image/svg+xml", href="/res/apple-touch-icon.png")
-                link(rel = "manifest", href="/res/site.webmanifest")
             }
             body {
 //                onLoad = getReloadJS(reloadtimeout)
                 h1 { +"wmusicplayer" }
-                form(action = "/mobile", method = FormMethod.get) {
+                form(action = mobileurl, method = FormMethod.get) {
                     onSubmit = getReloadJS(submitreloadtimeout) // browser reload without Post/Redirect/Get
                     target = "myiframe" // to avoid redirect at post, but uses deprecated "target".
                     p {

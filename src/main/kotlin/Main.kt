@@ -6,6 +6,7 @@ import org.eclipse.jetty.servlet.ServletContextHandler
 import org.eclipse.jetty.servlet.ServletHolder
 
 const val metaViewport = "user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width, height=device-height, target-densitydpi=device-dpi"
+const val mobileurl = "/mobile"
 
 fun main() {
 
@@ -31,7 +32,7 @@ fun main() {
     context.maxFormKeys = 5000 // important otherwise table fails after some scrolling.
 
     val shMobile = ServletHolder("mobile", KotlinxHtmlServlet::class.java)
-    context.addServlet(shMobile, "/mobile/*")
+    context.addServlet(shMobile, "$mobileurl/*")
 
     val shResources = ServletHolder("res", DefaultServlet::class.java)
     shResources.setInitParameter("dirAllowed","true")

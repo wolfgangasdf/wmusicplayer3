@@ -116,6 +116,12 @@ class EditPLSentry(index: Int?) : WDialog("Edit playlist entry...") {
 class ModelPlaylist(private val app: WApplication) : WAbstractTableModel() {
 
     override fun getRowCount(parent: WModelIndex?): Int = if (parent == null) { MusicPlayer.cPlaylist.size } else 0
+    override fun getFlags(index: WModelIndex?): EnumSet<ItemFlag> {
+        val e = EnumSet.copyOf(super.getFlags(index))
+        e.addAll(setOf(ItemFlag.DragEnabled, ItemFlag.DropEnabled))
+        return e
+    }
+
     override fun getData(index: WModelIndex?, role: ItemDataRole?): Any? {
         if (index?.row == -1) return null
         return when (role) {
@@ -128,6 +134,24 @@ class ModelPlaylist(private val app: WApplication) : WAbstractTableModel() {
                     }
             )
             else -> null
+        }
+    }
+
+    override fun dropEvent(e: WDropEvent?, action: DropAction?, pindex: WModelIndex?, side: Side?) {
+        if (e?.source is WItemSelectionModel) {
+            val sourceRows = (e.source as WItemSelectionModel).selectedIndexes.map { it.row } // this is sorted
+            var targetrow = pindex?.row ?: (MusicPlayer.cPlaylist.size - 1)
+            logger.debug("dropped rows $sourceRows onto ${pindex?.row} tr=$targetrow, side=$side")
+            if (side == Side.Bottom) targetrow += 1 // side is always Bottom in jwt for now, can't drop above first...
+            val tomoveitems = sourceRows.map { MusicPlayer.cPlaylist[it] }
+            MusicPlayer.cPlaylist.addAll(targetrow, tomoveitems)
+            sourceRows.reversed().forEach { sr -> // delete copied items from end!
+                if (sr > targetrow) // if item came from after target row, items are now shifted
+                    MusicPlayer.cPlaylist.removeAt(sr + sourceRows.size)
+                else
+                    MusicPlayer.cPlaylist.removeAt(sr)
+            }
+            dataChanged()
         }
     }
 
@@ -148,11 +172,6 @@ class ModelPlaylist(private val app: WApplication) : WAbstractTableModel() {
     init {
         logger.debug("initialize ModelPlaylist...: " + WApplication.getInstance().sessionId + " threadid: " + Thread.currentThread().threadId())
         MusicPlayer.cPlaylist.addListener(ListChangeListener { resetModelDelayed() })
-    }
-
-    override fun dropEvent(e: WDropEvent?, action: DropAction?, row: Int, column: Int, parent: WModelIndex?) {
-        logger.debug("drop: $action $row $column")
-        super.dropEvent(e, action, row, column, parent)
     }
 }
 
@@ -301,6 +320,8 @@ class CPlaylist(app: JwtApplication) : WContainerWidget() {
         selectionBehavior = SelectionBehavior.Rows
         editTriggers = EnumSet.of(EditTrigger.None)
         height = WLength("10000") // bugfix, scrollbars don't appear otherwise (but tvfiles is ok)!
+        setDragEnabled(true)
+        setEnabledDropLocations(DropLocation.BetweenRows)
 
         clicked().addListener(this) { mi, _ ->
             if (mi != null && mi.column == 0) {
@@ -537,8 +558,12 @@ class JwtApplication(env: WEnvironment, val isMobile: Boolean) : WApplication(en
         logger.info("initialize Application sid=${getInstance().sessionId} thread=${Thread.currentThread().threadId()} agent=${env.agent}")
 
         setTitle("WMP") // also web app name
-
         setCssTheme("polished")
+        addMetaHeader("mobile-web-app-capable", "yes")
+        // TODO below don't work
+        addMetaLink("/res/apple-touch-icon.png", "icon", "", "", "image/svg+xml", "", false)
+        addMetaLink("/res/webmanifest.json", "manifest", "", "", "", "", false)
+        addMetaLink("/res/favicon.svg", "apple-touch-icon", "", "", "", "", false)
 
         styleSheet.addRule("body", "font-family: verdana, helvetica, tahoma, sans-serif; font-size: 14px;")
         styleSheet.addRule("#cPlayerScrollable", "-webkit-flex: 1 0 auto !important;") // TODO hack chrome desktop player height

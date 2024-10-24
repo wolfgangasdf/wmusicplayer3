@@ -5,7 +5,7 @@ import java.util.*
 group = "com.wolle"
 version = "1.0-SNAPSHOT"
 val cPlatforms = listOf("mac", "linux", "win") // compile for these platforms. "mac", "mac-aarch64", "linux", "win"
-val kotlinversion = "1.9.23"
+val kotlinversion = "2.0.21"
 val needMajorJavaVersion = 21
 val javaVersion = System.getProperty("java.version")!!
 println("Current Java version: $javaVersion")
@@ -18,7 +18,7 @@ buildscript {
 }
 
 plugins {
-    kotlin("jvm") version "1.9.23"
+    kotlin("jvm") version "2.0.21"
     id("idea")
     application
     id("org.openjfx.javafxplugin") version "0.0.14"
@@ -69,13 +69,13 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib:$kotlinversion")
     implementation("org.jetbrains.kotlin:kotlin-reflect:$kotlinversion")
     implementation("io.github.microutils:kotlin-logging:3.0.5")
-    implementation("org.slf4j:slf4j-simple:2.0.13") // no colors, everything stderr
+    implementation("org.slf4j:slf4j-simple:2.0.16") // no colors, everything stderr
     implementation("org.eclipse.jetty:jetty-server:9.4.54.v20240208") // using servlet 4 with jwt 4.10
     implementation("org.eclipse.jetty:jetty-servlet:9.4.54.v20240208")
 
     // jwt
     implementation("com.github.wolfgangasdf:jwt:4.10.4") // https://jitpack.io/#wolfgangasdf/jwt
-    implementation("com.google.code.gson:gson:2.10.1") // otherwise, error with slider if opened with mac dashboard
+    implementation("com.google.code.gson:gson:2.11.0") // otherwise, error with slider if opened with mac dashboard
     implementation("commons-fileupload:commons-fileupload:1.5") // needed for jwt, bug?
 
     // kotlinx.html
@@ -87,7 +87,7 @@ dependencies {
     implementation("com.github.olegcherr:Aza-Kotlin-CSS:d152fc49ab")
 
     // sound
-    implementation("uk.co.caprica:vlcj:4.8.2")
+    implementation("uk.co.caprica:vlcj:4.8.3")
 
     // media info
     implementation("org.bitbucket.ijabz:jaudiotagger:3.0.1") // https://jitpack.io/#org.bitbucket.ijabz/jaudiotagger
